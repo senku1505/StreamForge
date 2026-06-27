@@ -57,7 +57,7 @@
       <!-- Heading -->
       <div class="mb-7">
         <h1 class="text-2xl font-bold tracking-tight text-white">New upload</h1>
-        <p class="mt-1 text-sm text-zinc-500">Transcoded to adaptive HLS (720p &amp; 480p) automatically via Celery.</p>
+        <p class="mt-1 text-sm text-zinc-500">Transcoded to HLS (1080p &amp; 720p) automatically via Celery.</p>
       </div>
 
       <!-- Form card -->
@@ -69,7 +69,7 @@
           <input
             type="text"
             id="title"
-            placeholder="e.g. Product Demo v2"
+            placeholder="e.g. Demo Vid.mp4"
             autocomplete="off"
             class="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder-zinc-600
                    outline-none transition duration-150
@@ -95,7 +95,7 @@
               <p id="fileName" class="text-sm font-medium text-zinc-400">
                 Drop video here or <span class="text-rose-400">browse files</span>
               </p>
-              <p class="mt-1 text-xs text-zinc-600">MP4, MOV, MKV, AVI — any resolution</p>
+              <p class="mt-1 text-xs text-zinc-600">MP4, MOV, MKV, AVI — Max 500MB</p>
             </div>
           </div>
         </div>
@@ -129,7 +129,7 @@
         </button>
       </div>
 
-      <p class="mt-4 text-center text-xs text-zinc-700">Powered by FFmpeg &amp; Celery · Processing runs in the background</p>
+      <p class="mt-4 text-center text-xs text-zinc-700">Powered by FFmpeg &amp; Celery</p>
     </div>
   </main>
 
@@ -156,6 +156,11 @@
         const progressText = document.getElementById('progressText');
 
         if (!title || !fileInput) return alert("Title and Media required.");
+
+        // Enforce 500MB size limit (500 * 1024 * 1024 = 524288000 bytes)
+        if (fileInput.size > 524288000) {
+            return alert("File size exceeds the 500MB limit. Please choose a smaller video.");
+        }
 
         btn.disabled = true;
         btn.classList.add('opacity-50', 'cursor-not-allowed');

@@ -16,8 +16,40 @@ def _run(cmd):
         raise subprocess.CalledProcessError(result.returncode, cmd, stderr=result.stderr)
 
 
+def check_and_enforce_storage_limit():
+    import os
+    from django.conf import settings
+    
+    total_size = 0
+    media_root = settings.MEDIA_ROOT
+    if os.path.exists(media_root):
+        for dirpath, dirnames, filenames in os.walk(media_root):
+            for f in filenames:
+                fp = os.path.join(dirpath, f)
+                if not os.path.islink(fp):
+                    try:
+                        total_size += os.path.getsize(fp)
+                    except OSError:
+                        pass
+                        
+    LIMIT_5GB = 5 * 1024 * 1024 * 1024
+    if total_size > LIMIT_5GB:
+        oldest_videos = Video.objects.all().order_by('created_at')[:2]
+        for video in oldest_videos:
+            try:
+                video.delete()
+            except Exception as e:
+                print(f"[StreamForge] Failed to delete old video {video.id} under storage quota: {e}")
+
+
 @shared_task
 def process_video(video_id):
+    # Enforce 5GB storage limit check
+    try:
+        check_and_enforce_storage_limit()
+    except Exception as e:
+        print(f"[StreamForge] Storage limit check failed: {e}")
+
     try:
         video = Video.objects.get(id=video_id)
     except Video.DoesNotExist:

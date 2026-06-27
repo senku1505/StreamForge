@@ -6,20 +6,12 @@
   <meta name="description" content="StreamForge Player — Adaptive HLS video streaming." />
   <title>StreamForge · Player</title>
 
-  <!-- Video.js 8 -->
-  <link href="https://unpkg.com/video.js@8/dist/video-js.min.css" rel="stylesheet" />
-  <script src="https://unpkg.com/video.js@8/dist/video.min.js"></script>
+  <!-- Plyr CSS & JS -->
+  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+  <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
-  <!-- Quality selector plugins -->
-  <script src="https://unpkg.com/videojs-contrib-quality-levels@4/dist/videojs-contrib-quality-levels.min.js"></script>
-  <link  href="https://unpkg.com/videojs-hls-quality-selector@2/dist/videojs-hls-quality-selector.css" rel="stylesheet" />
-  <script src="https://unpkg.com/videojs-hls-quality-selector@2/dist/videojs-hls-quality-selector.min.js"></script>
-
-  <!-- Sprite-thumbnail hover preview -->
-  <script src="https://unpkg.com/videojs-sprite-thumbnails@1/dist/videojs-sprite-thumbnails.min.js"></script>
-
-  <!-- VideoJS Hotkeys plugin -->
-  <script src="https://cdn.jsdelivr.net/npm/videojs-hotkeys@0.2/dist/videojs-hotkeys.min.js"></script>
+  <!-- Hls.js -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
   <!-- Tailwind + Inter -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -42,58 +34,26 @@
     }
     .dot-pulse { animation: dot-pulse 1.8s ease-in-out infinite; }
 
-    /* ── Video.js skin overrides ─────────────────────────────────────── */
-    .video-js {
+    /* ── Plyr Custom Theme Overrides ─────────────────────────────────── */
+    .plyr {
       width: 100%;
       height: 100%;
       background: #000;
-      font-family: 'Inter', sans-serif;
+      --plyr-color-main: #f43f5e; /* Rose 500 */
+      --plyr-video-background: #000;
+      --plyr-menu-background: rgba(24, 24, 27, 0.95);
+      --plyr-menu-color: #e4e4e7;
     }
-
-    /* Progress bar accent → rose */
-    .video-js .vjs-play-progress,
-    .video-js .vjs-volume-level {
-      background-color: #f43f5e;
+    .plyr__controls {
+      background: linear-gradient(to top, rgba(0,0,0,0.85), transparent) !important;
+      backdrop-filter: blur(2px);
     }
-    .video-js .vjs-play-progress::before {
-      color: #f43f5e;
+    /* Round corners of player wrapper */
+    @media (min-width: 640px) {
+      .plyr, .plyr__video-wrapper {
+        border-radius: 0 0 16px 16px;
+      }
     }
-
-    /* Control bar background */
-    .video-js .vjs-control-bar {
-      background: linear-gradient(to top, rgba(0,0,0,0.85), transparent);
-      height: 56px;
-      align-items: center;
-      padding: 0 8px;
-    }
-
-    /* Big play button */
-    .video-js .vjs-big-play-button {
-      background: rgba(0,0,0,0.55);
-      border: 2px solid rgba(255,255,255,0.25);
-      border-radius: 50%;
-      width: 64px;
-      height: 64px;
-      line-height: 62px;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      backdrop-filter: blur(4px);
-      transition: background 0.2s, border-color 0.2s;
-    }
-    .video-js:hover .vjs-big-play-button {
-      background: rgba(244,63,94,0.7);
-      border-color: rgba(255,255,255,0.5);
-    }
-    .video-js .vjs-big-play-button .vjs-icon-placeholder::before {
-      font-size: 2rem;
-      line-height: 64px;
-    }
-
-    /* Quality selector button */
-    .vjs-hls-quality-selector .vjs-menu-button { font-size: 0.75rem; }
-
-    /* Thumbnail preview tooltip */
-    .vjs-thumbnail-holder { border-radius: 6px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.6); }
   </style>
 </head>
 
@@ -132,7 +92,7 @@
         <div class="relative w-full sm:rounded-b-2xl overflow-hidden shadow-2xl shadow-black/80 border-b border-x border-white/[0.06] sm:border-t-0" style="aspect-ratio:16/9">
           <video
             id="videoPlayer"
-            class="video-js vjs-default-skin vjs-big-play-centered"
+            playsinline
             controls
             preload="auto"
             crossorigin="anonymous"
@@ -175,7 +135,7 @@
       <!-- Keyboard hint row -->
       <div class="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs text-zinc-600">
         <span><kbd class="rounded border border-zinc-700 bg-zinc-800/80 px-1.5 py-0.5 text-zinc-400 font-mono">Space</kbd> Play/Pause</span>
-        <span><kbd class="rounded border border-zinc-700 bg-zinc-800/80 px-1.5 py-0.5 text-zinc-400 font-mono">← →</kbd> ±5 seconds</span>
+        <span><kbd class="rounded border border-zinc-700 bg-zinc-800/80 px-1.5 py-0.5 text-zinc-400 font-mono">← →</kbd> Seek</span>
         <span><kbd class="rounded border border-zinc-700 bg-zinc-800/80 px-1.5 py-0.5 text-zinc-400 font-mono">↑ ↓</kbd> Volume</span>
         <span><kbd class="rounded border border-zinc-700 bg-zinc-800/80 px-1.5 py-0.5 text-zinc-400 font-mono">F</kbd> Fullscreen</span>
         <span><kbd class="rounded border border-zinc-700 bg-zinc-800/80 px-1.5 py-0.5 text-zinc-400 font-mono">M</kbd> Mute</span>
@@ -193,7 +153,8 @@
     let currentVideoData = null;
     let allVideos        = [];
     let currentIndex     = -1;
-    let vjsPlayer        = null;
+    let plyrPlayer       = null;
+    let hlsInstance      = null;
 
     function fmt(secs) {
       if (!secs || isNaN(secs)) return '';
@@ -202,7 +163,6 @@
       return `${m}:${s}`;
     }
 
-    // ── Load video data and initialise player ────────────────────────
     async function loadVideo() {
       const id = new URLSearchParams(window.location.search).get('id');
       if (!id) {
@@ -222,54 +182,46 @@
         badge.classList.remove('hidden');
       }
 
-      // ── Video.js initialisation ──────────────────────────────────
-      vjsPlayer = videojs('videoPlayer', {
-        controls:    true,
-        responsive:  false,
-        fluid:       false,
-        preload:     'auto',
-        poster:      currentVideoData.thumbnail || '',
-        playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2],
-      });
+      const video = document.getElementById('videoPlayer');
+      video.poster = currentVideoData.thumbnail || '';
 
-      vjsPlayer.ready(function () {
-        // HLS source
-        vjsPlayer.src({
-          src:  currentVideoData.hls_master,
-          type: 'application/x-mpegURL',
+      // Initialize Plyr + Hls.js
+      if (!Hls.isSupported()) {
+        video.src = currentVideoData.hls_master;
+        plyrPlayer = new Plyr(video, {
+          controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'settings', 'pip', 'fullscreen'],
+          settings: ['quality', 'speed'],
+          speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] }
         });
-
-        // Quality selector (reads renditions from master.m3u8 automatically)
-        vjsPlayer.hlsQualitySelector({ displayCurrentQuality: true });
-
-        // Hotkeys configuration for seamless playback
-        vjsPlayer.hotkeys({
-          volumeStep: 0.1,
-          seekStep: 5,
-          enableModifiersForNumbers: false,
-          alwaysCaptureHotkeys: true
-        });
-
-        // Sprite thumbnail hover preview
-        if (currentVideoData.sprite_sheet && currentVideoData.duration) {
-          const numFrames = Math.ceil(currentVideoData.duration / 5);
-          const cols      = Math.min(10, numFrames);
-          vjsPlayer.spriteThumbnails({
-            interval: 5,
-            url:      currentVideoData.sprite_sheet,
-            width:    160,
-            height:   90,
-            columns:  cols,
+      } else {
+        hlsInstance = new Hls();
+        hlsInstance.loadSource(currentVideoData.hls_master);
+        hlsInstance.attachMedia(video);
+        
+        hlsInstance.on(Hls.Events.MANIFEST_PARSED, function () {
+          // Get heights of HLS playlists
+          const availableQualities = hlsInstance.levels.map((l) => l.height);
+          
+          // Initialise Plyr
+          plyrPlayer = new Plyr(video, {
+            controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'settings', 'pip', 'fullscreen'],
+            settings: ['quality', 'speed'],
+            quality: {
+              default: availableQualities[0],
+              options: availableQualities,
+              forced: true,
+              onChange: (newQuality) => {
+                hlsInstance.levels.forEach((level, levelIndex) => {
+                  if (level.height === newQuality) {
+                    hlsInstance.currentLevel = levelIndex;
+                  }
+                });
+              }
+            },
+            speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] }
           });
-        }
-
-        // Auto-play next when done
-        vjsPlayer.on('ended', () => {
-          if (currentIndex < allVideos.length - 1) {
-            setTimeout(goToNext, 1500);
-          }
         });
-      });
+      }
 
       // ── Load all videos for prev/next ────────────────────────────
       const allRes = await fetch('/api/videos/');
