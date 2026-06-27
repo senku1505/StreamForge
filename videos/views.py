@@ -29,3 +29,11 @@ class VideoDetailView(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = VideoSerializer(video, context={'request': request})
         return Response(serializer.data)
+
+    def delete(self, request, pk):
+        try:
+            video = Video.objects.get(pk=pk)
+        except Video.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        video.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

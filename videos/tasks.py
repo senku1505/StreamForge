@@ -34,12 +34,13 @@ def process_video(video_id):
 
     # ── Output directories ────────────────────────────────────────────
     hls_dir   = os.path.join(media_root, 'hls', str(video_id))
+    dir_1080  = os.path.join(hls_dir, '1080p')
     dir_720   = os.path.join(hls_dir, '720p')
     dir_480   = os.path.join(hls_dir, '480p')
     thumb_dir = os.path.join(media_root, 'thumbnails')
     spr_dir   = os.path.join(media_root, 'sprites')
 
-    for d in [dir_720, dir_480, thumb_dir, spr_dir]:
+    for d in [dir_1080, dir_720, dir_480, thumb_dir, spr_dir]:
         os.makedirs(d, exist_ok=True)
 
     try:
@@ -54,7 +55,19 @@ def process_video(video_id):
         video.duration = round(duration, 2)
         video.save()
 
-        # ── 2. HLS 720p rendition ─────────────────────────────────────
+        # ── 2. HLS 1080p rendition ────────────────────────────────────
+        _run([
+            'ffmpeg', '-y', '-i', input_path,
+            '-vf', 'scale=-2:1080',
+            '-c:v', 'libx264', '-crf', '23', '-preset', 'fast',
+            '-c:a', 'aac', '-b:a', '192k',
+            '-hls_time', '6',
+            '-hls_playlist_type', 'vod',
+            '-hls_segment_filename', os.path.join(dir_1080, 'seg%03d.ts'),
+            os.path.join(dir_1080, 'stream.m3u8'),
+        ])
+
+        # ── 3. HLS 720p rendition ─────────────────────────────────────
         _run([
             'ffmpeg', '-y', '-i', input_path,
             '-vf', 'scale=-2:720',
@@ -66,7 +79,7 @@ def process_video(video_id):
             os.path.join(dir_720, 'stream.m3u8'),
         ])
 
-        # ── 3. HLS 480p rendition ─────────────────────────────────────
+        # ── 4. HLS 480p rendition ─────────────────────────────────────
         _run([
             'ffmpeg', '-y', '-i', input_path,
             '-vf', 'scale=-2:480',
@@ -78,12 +91,14 @@ def process_video(video_id):
             os.path.join(dir_480, 'stream.m3u8'),
         ])
 
-        # ── 4. HLS master playlist ────────────────────────────────────
+        # ── 5. HLS master playlist ────────────────────────────────────
         master_path = os.path.join(hls_dir, 'master.m3u8')
         with open(master_path, 'w') as f:
             f.write(
                 "#EXTM3U\n"
                 "#EXT-X-VERSION:3\n\n"
+                '#EXT-X-STREAM-INF:BANDWIDTH=5000000,RESOLUTION=1920x1080,NAME="1080p"\n'
+                "1080p/stream.m3u8\n"
                 '#EXT-X-STREAM-INF:BANDWIDTH=2800000,RESOLUTION=1280x720,NAME="720p"\n'
                 "720p/stream.m3u8\n"
                 '#EXT-X-STREAM-INF:BANDWIDTH=1400000,RESOLUTION=854x480,NAME="480p"\n'

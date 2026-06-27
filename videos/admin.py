@@ -43,29 +43,14 @@ class VideoAdmin(admin.ModelAdmin):
     def delete_with_files(self, request, queryset):
         count = 0
         for video in queryset:
-            # Remove entire HLS directory tree
-            try:
-                hls_dir = os.path.join(
-                    os.path.dirname(os.path.dirname(video.original_file.path)),
-                    'hls', str(video.id)
-                )
-                if os.path.exists(hls_dir):
-                    shutil.rmtree(hls_dir, ignore_errors=True)
-            except Exception:
-                pass
-
-            # Remove individual media files
-            for field in (video.thumbnail, video.sprite_sheet, video.original_file):
-                try:
-                    if field and field.name:
-                        field.delete(save=False)
-                except Exception:
-                    pass
-
             video.delete()
             count += 1
-
         self.message_user(
             request,
             f"Successfully deleted {count} video(s) and all associated files.",
         )
+
+    def delete_queryset(self, request, queryset):
+        for obj in queryset:
+            obj.delete()
+

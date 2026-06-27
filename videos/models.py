@@ -32,3 +32,26 @@ class Video(models.Model):
         m = int(self.duration // 60)
         s = int(self.duration % 60)
         return f"{m}:{s:02d}"
+
+    def delete(self, *args, **kwargs):
+        import shutil
+        import os
+        from django.conf import settings
+
+        # Clean up files on disk
+        try:
+            hls_dir = os.path.join(settings.MEDIA_ROOT, 'hls', str(self.id))
+            if os.path.exists(hls_dir):
+                shutil.rmtree(hls_dir, ignore_errors=True)
+        except Exception:
+            pass
+
+        # Remove individual media files
+        for field in (self.thumbnail, self.sprite_sheet, self.original_file):
+            try:
+                if field and field.name:
+                    field.delete(save=False)
+            except Exception:
+                pass
+
+        super().delete(*args, **kwargs)
