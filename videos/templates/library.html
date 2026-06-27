@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>StreamForge | Library</title>
+</head>
+
+<body class="bg-gray-900 text-white min-h-screen p-8">
+    <h1 class="text-4xl font-black text-red-600 mb-8">StreamForge</h1>
+    <div id="grid" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    </div>
+
+    <script>
+        async function loadLibrary() {
+            const res = await fetch('/api/videos/');
+            const videos = await res.json();
+            const grid = document.getElementById('grid');
+
+            videos.forEach(vid => {
+                const isDone = vid.status === 'done';
+                const link = isDone ? `/player/?id=${vid.id}` : '#';
+                const opacity = isDone ? 'opacity-100 hover:scale-105' : 'opacity-50 grayscale cursor-not-allowed';
+                const badge = isDone ? '' : '<span class="absolute top-2 right-2 bg-yellow-500 text-black text-xs px-2 py-1 rounded">Processing</span>';
+
+                // Fallback thumbnail if processing
+                const thumb = vid.thumbnail ? vid.thumbnail : 'https://via.placeholder.com/640x360.png?text=Processing...';
+
+                grid.innerHTML += `
+                    <a href="${link}" class="block relative transition-all duration-300 ${opacity}">
+                        <img src="${thumb}" class="w-full aspect-video object-cover rounded-lg border border-gray-700 shadow-lg">
+                        ${badge}
+                        <h3 class="mt-2 text-lg font-semibold truncate">${vid.title}</h3>
+                    </a>
+                `;
+            });
+        }
+        loadLibrary();
+    </script>
+</body>
+
+</html>

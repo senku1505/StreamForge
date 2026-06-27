@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>StreamForge | Upload</title>
+</head>
+
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4">
+    <div class="bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-md border border-gray-700">
+        <h2 class="text-3xl font-bold mb-6 text-red-600 tracking-tight">Upload Video</h2>
+
+        <input type="text" id="title" placeholder="Video Title (e.g. Tapestries of Fates)"
+            class="w-full mb-4 p-3 bg-gray-700 rounded-lg outline-none focus:ring-2 focus:ring-red-500">
+
+        <input type="file" id="file" accept="video/*"
+            class="w-full mb-6 text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-red-600 file:text-white hover:file:bg-red-700">
+
+        <button onclick="uploadVideo()" id="uploadBtn"
+            class="w-full bg-red-600 hover:bg-red-700 p-3 rounded-lg font-bold transition-all">Start
+            Transcoding</button>
+
+        <div id="status" class="mt-6 text-center text-sm font-semibold text-gray-400"></div>
+    </div>
+
+    <script>
+        async function uploadVideo() {
+            const title = document.getElementById('title').value;
+            const fileInput = document.getElementById('file').files[0];
+            const statusDiv = document.getElementById('status');
+            const btn = document.getElementById('uploadBtn');
+
+            if (!title || !fileInput) return alert("Fill all fields!");
+
+            btn.disabled = true;
+            btn.innerText = "Uploading...";
+
+            const formData = new FormData();
+            formData.append('title', title);
+            formData.append('original_file', fileInput);
+
+            // 1. Upload to API
+            const res = await fetch('/api/videos/', { method: 'POST', body: formData });
+            const data = await res.json();
+
+            // 2. Poll for Status
+            statusDiv.innerHTML = `<span class="text-yellow-500 animate-pulse">Processing in Celery Pipeline...</span>`;
+
+            const interval = setInterval(async () => {
+                const checkRes = await fetch(`/api/videos/${data.id}/`);
+                const checkData = await checkRes.json();
+
+                if (checkData.status === 'done') {
+                    clearInterval(interval);
+                    statusDiv.innerHTML = `<span class="text-green-500">Ready! <a href="/player/?id=${data.id}" class="underline">Watch Now</a></span>`;
+                    btn.innerText = "Upload Another";
+                    btn.disabled = false;
+                } else if (checkData.status === 'failed') {
+                    clearInterval(interval);
+                    statusDiv.innerHTML = `<span class="text-red-500">Transcoding Failed.</span>`;
+                }
+            }, 2000);
+        }
+    </script>
+</body>
+
+</html>

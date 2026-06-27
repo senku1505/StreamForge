@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>StreamForge | Player</title>
+</head>
+
+<body class="bg-black text-white min-h-screen flex flex-col items-center justify-center p-4">
+    <div class="w-full max-w-5xl">
+        <a href="/library/" class="text-gray-400 hover:text-white mb-4 inline-block">&larr; Back to Library</a>
+
+        <video id="videoPlayer" controls class="w-full rounded-xl shadow-2xl border border-gray-800 bg-gray-900"
+            crossorigin="anonymous"></video>
+
+        <div class="mt-6 flex justify-between items-center">
+            <h1 id="videoTitle" class="text-3xl font-bold">Loading...</h1>
+            <div class="space-x-2">
+                <button onclick="switchRes('480')"
+                    class="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded font-mono text-sm">480p</button>
+                <button onclick="switchRes('720')"
+                    class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded font-mono text-sm">720p</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentVideoData = null;
+        const player = document.getElementById('videoPlayer');
+
+        async function loadVideo() {
+            // Get ID from URL: /player/?id=5
+            const urlParams = new URLSearchParams(window.location.search);
+            const id = urlParams.get('id');
+
+            const res = await fetch(`/api/videos/${id}/`);
+            currentVideoData = await res.json();
+
+            document.getElementById('videoTitle').innerText = currentVideoData.title;
+            player.poster = currentVideoData.thumbnail;
+
+            // Default to 720p
+            switchRes('720');
+        }
+
+        function switchRes(res) {
+            const time = player.currentTime; // Remember where we were
+            player.src = res === '720' ? currentVideoData.video_720 : currentVideoData.video_480;
+            player.currentTime = time;
+            player.play();
+        }
+
+        loadVideo();
+    </script>
+</body>
+
+</html>
