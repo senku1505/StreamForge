@@ -1,14 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="StreamForge Player — Watch your transcoded video." />
+  <meta name="description" content="StreamForge Player — Adaptive HLS video streaming." />
   <title>StreamForge · Player</title>
+
+  <!-- Video.js 8 -->
+  <link href="https://unpkg.com/video.js@8/dist/video-js.min.css" rel="stylesheet" />
+  <script src="https://unpkg.com/video.js@8/dist/video.min.js"></script>
+
+  <!-- Quality selector plugins -->
+  <script src="https://unpkg.com/videojs-contrib-quality-levels@4/dist/videojs-contrib-quality-levels.min.js"></script>
+  <link  href="https://unpkg.com/videojs-hls-quality-selector@2/dist/videojs-hls-quality-selector.css" rel="stylesheet" />
+  <script src="https://unpkg.com/videojs-hls-quality-selector@2/dist/videojs-hls-quality-selector.min.js"></script>
+
+  <!-- Sprite-thumbnail hover preview -->
+  <script src="https://unpkg.com/videojs-sprite-thumbnails@1/dist/videojs-sprite-thumbnails.min.js"></script>
+
+  <!-- Tailwind + Inter -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
   <style>
     *, *::before, *::after { font-family: 'Inter', sans-serif; box-sizing: border-box; }
 
@@ -18,21 +32,70 @@
     }
     .animate-fade-up { animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) both; }
 
-    /* Remove default video chrome on webkit */
-    video::-webkit-media-controls { border-radius: 0 0 1rem 1rem; }
-    video { display: block; }
-
     @keyframes dot-pulse {
       0%, 100% { opacity: 1; }
       50%       { opacity: 0.3; }
     }
     .dot-pulse { animation: dot-pulse 1.8s ease-in-out infinite; }
+
+    /* ── Video.js skin overrides ─────────────────────────────────────── */
+    .video-js {
+      width: 100%;
+      height: 100%;
+      background: #000;
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* Progress bar accent → rose */
+    .video-js .vjs-play-progress,
+    .video-js .vjs-volume-level {
+      background-color: #f43f5e;
+    }
+    .video-js .vjs-play-progress::before {
+      color: #f43f5e;
+    }
+
+    /* Control bar background */
+    .video-js .vjs-control-bar {
+      background: linear-gradient(to top, rgba(0,0,0,0.85), transparent);
+      height: 56px;
+      align-items: center;
+      padding: 0 8px;
+    }
+
+    /* Big play button */
+    .video-js .vjs-big-play-button {
+      background: rgba(0,0,0,0.55);
+      border: 2px solid rgba(255,255,255,0.25);
+      border-radius: 50%;
+      width: 64px;
+      height: 64px;
+      line-height: 62px;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      backdrop-filter: blur(4px);
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .video-js:hover .vjs-big-play-button {
+      background: rgba(244,63,94,0.7);
+      border-color: rgba(255,255,255,0.5);
+    }
+    .video-js .vjs-big-play-button .vjs-icon-placeholder::before {
+      font-size: 2rem;
+      line-height: 64px;
+    }
+
+    /* Quality selector button */
+    .vjs-hls-quality-selector .vjs-menu-button { font-size: 0.75rem; }
+
+    /* Thumbnail preview tooltip */
+    .vjs-thumbnail-holder { border-radius: 6px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.6); }
   </style>
 </head>
 
 <body class="bg-[#09090b] text-zinc-200 min-h-screen antialiased flex flex-col">
 
-  <!-- ── NAVBAR ───────────────────────────────────────────────────────── -->
+  <!-- ── NAVBAR ─────────────────────────────────────────────────────── -->
   <header class="fixed inset-x-0 top-0 z-50 h-14 border-b border-white/[0.06] bg-[#09090b]/90 backdrop-blur-md">
     <div class="mx-auto flex h-full max-w-6xl items-center justify-between px-5">
       <a href="/library/" class="flex items-center gap-2.5 group">
@@ -44,117 +107,192 @@
         </span>
         <span class="text-[15px] font-semibold tracking-tight text-white">StreamForge</span>
       </a>
-      <a
-        href="/library/"
-        class="flex items-center gap-1.5 text-sm text-zinc-400 transition hover:text-zinc-200 group"
-      >
-        <svg class="h-4 w-4 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/>
-        </svg>
-        Library
-      </a>
+      <div class="flex items-center gap-4">
+        <a href="/library/" class="flex items-center gap-1.5 text-sm text-zinc-400 transition hover:text-zinc-200 group">
+          <svg class="h-4 w-4 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/>
+          </svg>
+          Library
+        </a>
+        <a href="/about/" class="text-sm text-zinc-500 transition hover:text-zinc-300">About</a>
+      </div>
     </div>
   </header>
 
-  <!-- ── MAIN ─────────────────────────────────────────────────────────── -->
+  <!-- ── MAIN ──────────────────────────────────────────────────────── -->
   <main class="flex flex-1 flex-col pt-14">
 
-    <!-- Video stage — full width, nearly full height feel -->
+    <!-- Video stage -->
     <div class="w-full bg-black">
-      <div class="mx-auto max-w-6xl px-0 sm:px-6 xl:px-0">
-        <div class="relative overflow-hidden sm:rounded-b-2xl shadow-2xl shadow-black/80 border-b border-x border-white/[0.06] sm:border-t-0">
+      <div class="mx-auto max-w-6xl sm:px-6">
+        <div class="relative w-full sm:rounded-b-2xl overflow-hidden shadow-2xl shadow-black/80 border-b border-x border-white/[0.06] sm:border-t-0" style="aspect-ratio:16/9">
           <video
             id="videoPlayer"
+            class="video-js vjs-default-skin vjs-big-play-centered"
             controls
+            preload="auto"
             crossorigin="anonymous"
-            class="w-full aspect-video outline-none bg-black"
           ></video>
         </div>
       </div>
     </div>
 
-    <!-- Metadata + Controls -->
+    <!-- Metadata -->
     <div class="mx-auto w-full max-w-6xl px-6 py-8 animate-fade-up">
       <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-
-        <!-- Title & status -->
         <div class="min-w-0 flex-1">
           <h1 id="videoTitle" class="text-2xl font-bold tracking-tight text-white truncate mb-2">Loading…</h1>
-          <div class="flex items-center gap-2 text-sm text-zinc-500">
-            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 dot-pulse flex-shrink-0"></span>
-            <span>Streaming from StreamForge Engine</span>
+          <div class="flex items-center gap-4 text-sm text-zinc-500 flex-wrap">
+            <span class="flex items-center gap-2">
+              <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 dot-pulse flex-shrink-0"></span>
+              Adaptive HLS · StreamForge Engine
+            </span>
+            <span id="durationBadge" class="hidden tabular-nums"></span>
           </div>
         </div>
 
-        <!-- Quality switcher -->
-        <div class="flex-shrink-0">
-          <p class="mb-2 text-xs font-medium text-zinc-500 sm:text-right">Quality</p>
-          <div class="flex gap-1 rounded-xl border border-white/[0.08] bg-white/[0.04] p-1">
-            <button
-              onclick="switchRes('480')"
-              id="btn480"
-              class="rounded-lg px-4 py-1.5 text-sm font-semibold text-zinc-400 transition-all duration-150 hover:text-zinc-200"
-            >480p</button>
-            <button
-              onclick="switchRes('720')"
-              id="btn720"
-              class="rounded-lg bg-rose-600 px-4 py-1.5 text-sm font-semibold text-white shadow transition-all duration-150"
-            >720p HD</button>
-          </div>
+        <!-- Prev / Next -->
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <button id="prevBtn" onclick="goToPrev()"
+            class="flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2 text-sm font-medium text-zinc-400
+                   transition hover:bg-white/[0.08] hover:text-zinc-200 disabled:opacity-30 disabled:cursor-not-allowed">
+            <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+            Previous
+          </button>
+          <button id="nextBtn" onclick="goToNext()"
+            class="flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2 text-sm font-medium text-zinc-400
+                   transition hover:bg-white/[0.08] hover:text-zinc-200 disabled:opacity-30 disabled:cursor-not-allowed">
+            Next
+            <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zm2.5-6 5.5 3.88V8.12L8.5 12zM16 6h2v12h-2z"/></svg>
+          </button>
         </div>
       </div>
 
-      <!-- Divider -->
-      <div class="mt-8 border-t border-white/[0.06]"></div>
+      <!-- Keyboard hint row -->
+      <div class="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs text-zinc-600">
+        <span><kbd class="rounded border border-zinc-700 bg-zinc-800/80 px-1.5 py-0.5 text-zinc-400 font-mono">Space</kbd> Play/Pause</span>
+        <span><kbd class="rounded border border-zinc-700 bg-zinc-800/80 px-1.5 py-0.5 text-zinc-400 font-mono">← →</kbd> ±5 seconds</span>
+        <span><kbd class="rounded border border-zinc-700 bg-zinc-800/80 px-1.5 py-0.5 text-zinc-400 font-mono">↑ ↓</kbd> Volume</span>
+        <span><kbd class="rounded border border-zinc-700 bg-zinc-800/80 px-1.5 py-0.5 text-zinc-400 font-mono">F</kbd> Fullscreen</span>
+        <span><kbd class="rounded border border-zinc-700 bg-zinc-800/80 px-1.5 py-0.5 text-zinc-400 font-mono">M</kbd> Mute</span>
+      </div>
 
-      <!-- Bottom nav hint -->
-      <div class="mt-6 flex items-center justify-between text-xs text-zinc-600">
-        <span>StreamForge · Adaptive streaming</span>
+      <div class="mt-6 border-t border-white/[0.06]"></div>
+      <div class="mt-5 flex items-center justify-between text-xs text-zinc-700">
+        <span>StreamForge · HLS Adaptive Streaming</span>
         <a href="/upload/" class="transition hover:text-zinc-400">Upload another →</a>
       </div>
     </div>
   </main>
 
-  <!-- ── SCRIPTS (logic 100% untouched) ──────────────────────────────── -->
   <script>
     let currentVideoData = null;
-    const player = document.getElementById('videoPlayer');
+    let allVideos        = [];
+    let currentIndex     = -1;
+    let vjsPlayer        = null;
 
+    function fmt(secs) {
+      if (!secs || isNaN(secs)) return '';
+      const m = Math.floor(secs / 60);
+      const s = Math.floor(secs % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    // ── Load video data and initialise player ────────────────────────
     async function loadVideo() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const id = urlParams.get('id');
+      const id = new URLSearchParams(window.location.search).get('id');
+      if (!id) {
+        document.getElementById('videoTitle').innerText = 'Video Not Found';
+        return;
+      }
 
-        if (!id) return document.getElementById('videoTitle').innerText = "Video Not Found";
+      const res = await fetch(`/api/videos/${id}/`);
+      currentVideoData = await res.json();
 
-        const res = await fetch(`/api/videos/${id}/`);
-        currentVideoData = await res.json();
+      document.getElementById('videoTitle').innerText = currentVideoData.title;
 
-        document.getElementById('videoTitle').innerText = currentVideoData.title;
-        player.poster = currentVideoData.thumbnail;
+      // Duration badge
+      if (currentVideoData.duration) {
+        const badge = document.getElementById('durationBadge');
+        badge.innerText = fmt(currentVideoData.duration);
+        badge.classList.remove('hidden');
+      }
 
-        switchRes('720');
-    }
+      // ── Video.js initialisation ──────────────────────────────────
+      vjsPlayer = videojs('videoPlayer', {
+        controls:    true,
+        responsive:  false,
+        fluid:       false,
+        preload:     'auto',
+        poster:      currentVideoData.thumbnail || '',
+        playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2],
+      });
 
-    function switchRes(res) {
-        const time = player.currentTime;
-        const isPaused = player.paused;
+      vjsPlayer.ready(function () {
+        // HLS source
+        vjsPlayer.src({
+          src:  currentVideoData.hls_master,
+          type: 'application/x-mpegURL',
+        });
 
-        player.src = res === '720' ? currentVideoData.video_720 : currentVideoData.video_480;
-        player.currentTime = time;
-        if (!isPaused) player.play();
+        // Quality selector (reads renditions from master.m3u8 automatically)
+        vjsPlayer.hlsQualitySelector({ displayCurrentQuality: true });
 
-        // UI Toggle
-        if (res === '720') {
-            document.getElementById('btn720').className = "rounded-lg bg-rose-600 px-4 py-1.5 text-sm font-semibold text-white shadow transition-all duration-150";
-            document.getElementById('btn480').className = "rounded-lg px-4 py-1.5 text-sm font-semibold text-zinc-400 transition-all duration-150 hover:text-zinc-200";
-        } else {
-            document.getElementById('btn480').className = "rounded-lg bg-rose-600 px-4 py-1.5 text-sm font-semibold text-white shadow transition-all duration-150";
-            document.getElementById('btn720').className = "rounded-lg px-4 py-1.5 text-sm font-semibold text-zinc-400 transition-all duration-150 hover:text-zinc-200";
+        // Sprite thumbnail hover preview
+        if (currentVideoData.sprite_sheet && currentVideoData.duration) {
+          const numFrames = Math.ceil(currentVideoData.duration / 5);
+          const cols      = Math.min(10, numFrames);
+          vjsPlayer.spriteThumbnails({
+            interval: 5,
+            url:      currentVideoData.sprite_sheet,
+            width:    160,
+            height:   90,
+            columns:  cols,
+          });
         }
+
+        // Auto-play next when done
+        vjsPlayer.on('ended', () => {
+          if (currentIndex < allVideos.length - 1) {
+            setTimeout(goToNext, 1500);
+          }
+        });
+      });
+
+      // ── Load all videos for prev/next ────────────────────────────
+      const allRes = await fetch('/api/videos/');
+      allVideos    = await allRes.json();
+      currentIndex = allVideos.findIndex(v => v.id === currentVideoData.id);
+      updateNavBtns();
     }
+
+    function updateNavBtns() {
+      document.getElementById('prevBtn').disabled = currentIndex <= 0;
+      document.getElementById('nextBtn').disabled = currentIndex >= allVideos.length - 1;
+    }
+
+    function goToPrev() {
+      if (currentIndex <= 0) return;
+      window.location.href = `/player/?id=${allVideos[currentIndex - 1].id}`;
+    }
+    function goToNext() {
+      if (currentIndex >= allVideos.length - 1) return;
+      window.location.href = `/player/?id=${allVideos[currentIndex + 1].id}`;
+    }
+
+    // ── Keyboard shortcuts (Video.js handles most natively) ──────────
+    document.addEventListener('keydown', e => {
+      if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
+      if (!vjsPlayer) return;
+      switch (e.key) {
+        case 'ArrowRight': e.preventDefault(); vjsPlayer.currentTime(vjsPlayer.currentTime() + 5);  break;
+        case 'ArrowLeft':  e.preventDefault(); vjsPlayer.currentTime(vjsPlayer.currentTime() - 5);  break;
+        case 'ArrowUp':    e.preventDefault(); vjsPlayer.volume(Math.min(1, vjsPlayer.volume() + 0.1)); break;
+        case 'ArrowDown':  e.preventDefault(); vjsPlayer.volume(Math.max(0, vjsPlayer.volume() - 0.1)); break;
+      }
+    });
 
     loadVideo();
   </script>
 </body>
-
 </html>

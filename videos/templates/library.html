@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -19,23 +18,27 @@
     .animate-fade-up { animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) both; }
 
     @keyframes shimmer {
-      0%   { background-position: -400px 0; }
-      100% { background-position: 400px 0; }
+      0%   { background-position: -600px 0; }
+      100% { background-position:  600px 0; }
     }
     .skeleton {
-      background: linear-gradient(90deg, rgb(255 255 255 / 0.04) 25%, rgb(255 255 255 / 0.08) 50%, rgb(255 255 255 / 0.04) 75%);
-      background-size: 400px 100%;
-      animation: shimmer 1.4s ease infinite;
+      background: linear-gradient(90deg, rgb(255 255 255 / 0.03) 25%, rgb(255 255 255 / 0.07) 50%, rgb(255 255 255 / 0.03) 75%);
+      background-size: 600px 100%;
+      animation: shimmer 1.6s ease infinite;
     }
+
+    .card-thumb { transition: transform 0.6s cubic-bezier(0.25,0.46,0.45,0.94); }
+    .card-link:hover .card-thumb { transform: scale(1.04); }
+    .card-play  { opacity: 0; transition: opacity 0.2s; }
+    .card-link:hover .card-play  { opacity: 1; }
   </style>
 </head>
 
 <body class="bg-[#09090b] text-zinc-200 min-h-screen antialiased">
 
-  <!-- ── STICKY HEADER ─────────────────────────────────────────────── -->
+  <!-- ── STICKY HEADER ───────────────────────────────────────────── -->
   <header class="sticky top-0 z-50 h-14 border-b border-white/[0.06] bg-[#09090b]/80 backdrop-blur-md">
-    <div class="mx-auto flex h-full max-w-7xl items-center justify-between px-6">
-      <!-- Brand -->
+    <div class="mx-auto flex h-full max-w-6xl items-center justify-between px-6">
       <div class="flex items-center gap-2.5">
         <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-rose-500 to-rose-700 shadow shadow-rose-900/50">
           <svg class="w-3.5 h-3.5 text-white" viewBox="0 0 14 14" fill="currentColor">
@@ -44,16 +47,14 @@
           </svg>
         </span>
         <span class="text-[15px] font-semibold tracking-tight text-white">StreamForge</span>
-        <span id="videoCount" class="hidden ml-1.5 rounded-full bg-white/[0.08] px-2 py-0.5 text-[11px] font-medium text-zinc-400 tabular-nums"></span>
+        <span id="videoCount" class="hidden ml-1 rounded-full bg-white/[0.07] px-2 py-0.5 text-[11px] font-medium text-zinc-500 tabular-nums"></span>
       </div>
-      <!-- Nav -->
       <div class="flex items-center gap-2">
-        <span class="hidden sm:block text-sm text-zinc-300 bg-white/[0.06] rounded-lg px-3 py-1.5 font-medium">Library</span>
-        <a
-          href="/upload/"
-          class="flex items-center gap-1.5 rounded-lg bg-rose-600 px-3.5 py-1.5 text-sm font-semibold text-white shadow shadow-rose-900/40
-                 transition hover:bg-rose-500 active:scale-[0.97] focus:outline-none focus:ring-2 focus:ring-rose-500/40"
-        >
+        <a href="/about/" class="hidden sm:block rounded-lg px-3 py-1.5 text-sm text-zinc-500 transition hover:bg-white/[0.06] hover:text-zinc-300">About</a>
+        <span class="hidden sm:block rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-300 bg-white/[0.06]">Library</span>
+        <a href="/upload/"
+          class="flex items-center gap-1.5 rounded-lg bg-rose-600 px-3.5 py-1.5 text-sm font-semibold text-white
+                 transition hover:bg-rose-500 active:scale-[0.97] focus:outline-none focus:ring-2 focus:ring-rose-500/40">
           <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
           </svg>
@@ -63,117 +64,112 @@
     </div>
   </header>
 
-  <!-- ── CONTENT ───────────────────────────────────────────────────── -->
-  <main class="mx-auto max-w-7xl px-6 py-10">
-    <!-- Page title row -->
-    <div class="mb-8 flex items-center justify-between">
+  <!-- ── MAIN ──────────────────────────────────────────────────────── -->
+  <main class="mx-auto max-w-6xl px-6 py-10">
+    <div class="mb-8">
       <h1 class="text-xl font-bold tracking-tight text-white">All videos</h1>
+      <p class="mt-1 text-sm text-zinc-600">Your processed and ready-to-watch videos · Served via HLS</p>
     </div>
 
-    <!-- Skeleton loaders (shown while fetching) -->
-    <div id="skeletons" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      <!-- 4 placeholder cards -->
-      <div class="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-        <div class="skeleton aspect-video w-full"></div>
-        <div class="p-4 space-y-2.5">
-          <div class="skeleton h-4 w-3/4 rounded-lg"></div>
-          <div class="skeleton h-3 w-1/3 rounded-lg"></div>
-        </div>
-      </div>
-      <div class="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-        <div class="skeleton aspect-video w-full"></div>
-        <div class="p-4 space-y-2.5">
-          <div class="skeleton h-4 w-2/3 rounded-lg"></div>
-          <div class="skeleton h-3 w-1/4 rounded-lg"></div>
-        </div>
-      </div>
-      <div class="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-        <div class="skeleton aspect-video w-full"></div>
-        <div class="p-4 space-y-2.5">
-          <div class="skeleton h-4 w-4/5 rounded-lg"></div>
-          <div class="skeleton h-3 w-1/3 rounded-lg"></div>
-        </div>
-      </div>
-      <div class="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-        <div class="skeleton aspect-video w-full"></div>
-        <div class="p-4 space-y-2.5">
-          <div class="skeleton h-4 w-1/2 rounded-lg"></div>
-          <div class="skeleton h-3 w-1/4 rounded-lg"></div>
-        </div>
-      </div>
+    <!-- Skeleton loaders -->
+    <div id="skeletons" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="rounded-2xl border border-white/[0.05] overflow-hidden bg-white/[0.02]"><div class="skeleton aspect-video w-full"></div><div class="p-4 space-y-2.5"><div class="skeleton h-4 w-3/4 rounded-lg"></div><div class="skeleton h-3 w-1/3 rounded-lg"></div></div></div>
+      <div class="rounded-2xl border border-white/[0.05] overflow-hidden bg-white/[0.02]"><div class="skeleton aspect-video w-full"></div><div class="p-4 space-y-2.5"><div class="skeleton h-4 w-2/3 rounded-lg"></div><div class="skeleton h-3 w-1/4 rounded-lg"></div></div></div>
+      <div class="rounded-2xl border border-white/[0.05] overflow-hidden bg-white/[0.02]"><div class="skeleton aspect-video w-full"></div><div class="p-4 space-y-2.5"><div class="skeleton h-4 w-4/5 rounded-lg"></div><div class="skeleton h-3 w-1/3 rounded-lg"></div></div></div>
     </div>
 
-    <!-- Video grid (populated by JS) -->
-    <div id="grid" class="hidden grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-fade-up"></div>
+    <!-- Video grid -->
+    <div id="grid" class="hidden grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 animate-fade-up"></div>
 
-    <!-- Empty state (shown if no videos) -->
-    <div id="emptyState" class="hidden flex flex-col items-center justify-center py-28 text-center animate-fade-up">
-      <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.04]">
-        <svg class="h-7 w-7 text-zinc-500" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z"/>
-        </svg>
+    <!-- Empty state -->
+    <div id="emptyState" class="hidden">
+      <div class="flex flex-col items-center justify-center py-32 text-center animate-fade-up">
+        <div class="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-white/[0.07] bg-white/[0.03]">
+          <svg class="h-8 w-8 text-zinc-600" fill="none" stroke="currentColor" stroke-width="1.3" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z"/>
+          </svg>
+        </div>
+        <h3 class="text-base font-semibold text-white mb-1.5">No videos yet</h3>
+        <p class="text-sm text-zinc-500 mb-7 max-w-xs leading-relaxed">Upload your first video and StreamForge will transcode it to HLS automatically.</p>
+        <a href="/upload/" class="rounded-xl bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-500 active:scale-[0.98]">Upload a video</a>
       </div>
-      <h3 class="text-base font-semibold text-white mb-1">No videos yet</h3>
-      <p class="text-sm text-zinc-500 mb-6 max-w-xs">Upload your first video and StreamForge will transcode it automatically.</p>
-      <a href="/upload/" class="rounded-xl bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-500">
-        Upload a video
-      </a>
     </div>
   </main>
 
-  <!-- ── SCRIPTS (logic 100% untouched) ──────────────────────────────── -->
   <script>
+    function fmtDuration(secs) {
+      if (!secs) return null;
+      const m = Math.floor(secs / 60);
+      const s = Math.floor(secs % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
     async function loadLibrary() {
-        const res = await fetch('/api/videos/');
-        const videos = await res.json();
-        const grid = document.getElementById('grid');
+      const res    = await fetch('/api/videos/');
+      const videos = await res.json();
+      const grid   = document.getElementById('grid');
 
-        // Hide skeletons
-        document.getElementById('skeletons').classList.add('hidden');
+      document.getElementById('skeletons').classList.add('hidden');
 
-        if (videos.length === 0) {
-            document.getElementById('emptyState').classList.remove('hidden');
-            document.getElementById('emptyState').classList.add('flex');
-            return;
-        }
+      if (videos.length === 0) {
+        document.getElementById('emptyState').classList.remove('hidden');
+        return;
+      }
 
-        // Show count
-        const countEl = document.getElementById('videoCount');
-        countEl.innerText = videos.length;
-        countEl.classList.remove('hidden');
+      const countEl = document.getElementById('videoCount');
+      countEl.innerText = videos.length;
+      countEl.classList.remove('hidden');
 
-        // Show grid
-        grid.classList.remove('hidden');
+      grid.classList.remove('hidden');
+      grid.classList.add('grid');
 
-        videos.forEach(vid => {
-            const isDone = vid.status === 'done';
-            const link = isDone ? `/player/?id=${vid.id}` : '#';
+      videos.forEach(vid => {
+        const isDone   = vid.status === 'done';
+        const link     = isDone ? `/player/?id=${vid.id}` : '#';
+        const thumb    = vid.thumbnail || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop';
+        const duration = fmtDuration(vid.duration);
 
-            // Card styling based on status
-            const cardClass = isDone ? 'hover:-translate-y-2 hover:shadow-2xl hover:shadow-rose-500/10' : 'opacity-60 cursor-not-allowed';
-            const thumb = vid.thumbnail ? vid.thumbnail : 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop';
+        const badge = isDone
+          ? `<span class="absolute top-3 right-3 flex items-center gap-1 rounded-md bg-emerald-500/90 backdrop-blur-sm px-2 py-0.5 text-[10px] font-bold text-white tracking-wide">
+               <span class="h-1.5 w-1.5 rounded-full bg-white/80"></span>READY
+             </span>`
+          : `<span class="absolute top-3 right-3 flex items-center gap-1 rounded-md bg-amber-500/90 backdrop-blur-sm px-2 py-0.5 text-[10px] font-bold text-black tracking-wide animate-pulse">
+               <span class="h-1.5 w-1.5 rounded-full bg-black/50"></span>PROCESSING
+             </span>`;
 
-            const badge = isDone
-                ? '<span class="absolute top-3 right-3 bg-emerald-500/90 backdrop-blur text-white text-xs font-bold px-2.5 py-1 rounded-md shadow-lg">READY</span>'
-                : '<span class="absolute top-3 right-3 bg-amber-500/90 backdrop-blur text-black text-xs font-bold px-2.5 py-1 rounded-md shadow-lg animate-pulse">PROCESSING</span>';
+        const durationEl = duration
+          ? `<span class="absolute bottom-3 left-3 rounded bg-black/70 backdrop-blur-sm px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-white">${duration}</span>`
+          : '';
 
-            grid.innerHTML += `
-                <a href="${link}" class="group block relative transition-all duration-300 bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden ${cardClass}">
-                    <div class="aspect-video relative overflow-hidden bg-slate-900">
-                        <img src="${thumb}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
-                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-80"></div>
-                        ${badge}
-                    </div>
-                    <div class="p-5">
-                        <h3 class="text-lg font-bold text-white truncate mb-1">${vid.title}</h3>
-                        <p class="text-xs text-slate-500 font-mono">${new Date(vid.created_at).toLocaleDateString()}</p>
-                    </div>
-                </a>
-            `;
-        });
+        const playBtn = isDone
+          ? `<div class="card-play absolute inset-0 flex items-center justify-center z-10">
+               <div class="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-xl">
+                 <svg class="h-5 w-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+               </div>
+             </div>` : '';
+
+        grid.innerHTML += `
+          <a href="${link}" class="card-link group block rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden
+                                  transition-all duration-300 hover:border-white/[0.12] hover:bg-white/[0.04] hover:shadow-xl hover:shadow-black/40
+                                  ${isDone ? '' : 'opacity-50 pointer-events-none'}">
+            <div class="relative aspect-video overflow-hidden bg-zinc-900">
+              <img src="${thumb}" alt="${vid.title}" class="card-thumb w-full h-full object-cover" loading="lazy" />
+              <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+              ${badge}
+              ${durationEl}
+              ${playBtn}
+            </div>
+            <div class="p-4">
+              <h3 class="text-sm font-semibold text-white truncate mb-1 group-hover:text-zinc-100">${vid.title}</h3>
+              <div class="flex items-center justify-between">
+                <p class="text-xs text-zinc-600">${new Date(vid.created_at).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})}</p>
+                ${isDone ? '<span class="text-xs text-zinc-600">HLS · 720p · 480p</span>' : ''}
+              </div>
+            </div>
+          </a>`;
+      });
     }
     loadLibrary();
   </script>
 </body>
-
 </html>
