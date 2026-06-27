@@ -7,6 +7,9 @@ from .serializers import VideoSerializer
 
 
 class VideoListView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
     def get(self, request):
         videos = Video.objects.all()
         serializer = VideoSerializer(videos, many=True, context={'request': request})
@@ -22,6 +25,9 @@ class VideoListView(APIView):
 
 
 class VideoDetailView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
     def get(self, request, pk):
         try:
             video = Video.objects.get(pk=pk)

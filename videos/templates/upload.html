@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="StreamForge Studio — Upload and transcode your videos with a single click." />
+  <meta name="description" content="StreamForge Studio — Concurrent multi-video HLS transcoding pipeline." />
   <title>StreamForge · Studio</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -18,12 +17,10 @@
     }
     .animate-fade-up { animation: fadeUp 0.35s cubic-bezier(0.16,1,0.3,1) both; }
 
-    /* Drop-zone active state toggled by JS */
     .drop-active {
       border-color: rgb(244 63 94 / 0.6) !important;
       background-color: rgb(244 63 94 / 0.05) !important;
     }
-    .drop-active #dropIcon { color: #f43f5e; }
   </style>
 </head>
 
@@ -34,7 +31,6 @@
     <div class="mx-auto flex h-full max-w-6xl items-center justify-between px-5">
       <a href="/" class="flex items-center gap-2.5 group">
         <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-rose-500 to-rose-700 shadow shadow-rose-900/50 transition-shadow group-hover:shadow-rose-500/40">
-          <!-- logo bars -->
           <svg class="w-3.5 h-3.5 text-white" viewBox="0 0 14 14" fill="currentColor">
             <rect x="1" y="1" width="4.5" height="12" rx="1"/>
             <rect x="8.5" y="1" width="4.5" height="12" rx="1"/>
@@ -52,178 +48,260 @@
 
   <!-- ── MAIN ─────────────────────────────────────────────────────────── -->
   <main class="flex flex-1 items-center justify-center px-4 pt-24 pb-16">
-    <div class="w-full max-w-[480px] animate-fade-up">
+    <div class="w-full max-w-[560px] animate-fade-up">
 
       <!-- Heading -->
       <div class="mb-7">
-        <h1 class="text-2xl font-bold tracking-tight text-white">New upload</h1>
-        <p class="mt-1 text-sm text-zinc-500">Transcoded to HLS (1080p &amp; 720p) automatically via Celery.</p>
+        <h1 class="text-2xl font-bold tracking-tight text-white">Concurrent Studio</h1>
+        <p class="mt-1 text-sm text-zinc-500">Drop multiple files and process them in parallel using Celery concurrency.</p>
       </div>
 
       <!-- Form card -->
       <div class="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-6 shadow-2xl shadow-black/50">
 
-        <!-- Title -->
-        <div class="mb-4">
-          <label for="title" class="mb-1.5 block text-xs font-medium text-zinc-400">Title</label>
-          <input
-            type="text"
-            id="title"
-            placeholder="e.g. Demo Vid.mp4"
-            autocomplete="off"
-            class="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder-zinc-600
-                   outline-none transition duration-150
-                   focus:border-rose-500/50 focus:bg-white/[0.06] focus:ring-2 focus:ring-rose-500/20"
-          />
-        </div>
-
-        <!-- Drop zone -->
-        <div class="mb-5">
-          <label class="mb-1.5 block text-xs font-medium text-zinc-400">Media file</label>
+        <!-- Drop zone (Multiple selection enabled) -->
+        <div class="mb-6">
           <div
             id="dropZone"
             class="relative cursor-pointer rounded-xl border-2 border-dashed border-white/[0.08] bg-white/[0.02]
                    transition-all duration-200 hover:border-rose-500/40 hover:bg-rose-500/[0.03]"
           >
-            <input type="file" id="file" accept="video/*" class="absolute inset-0 h-full w-full cursor-pointer opacity-0 z-10" />
-            <div class="pointer-events-none flex flex-col items-center justify-center py-9 px-6 text-center">
-              <div id="dropIcon" class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.05] text-zinc-400 transition-colors">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"/>
+            <input type="file" id="files" accept="video/*" multiple class="absolute inset-0 h-full w-full cursor-pointer opacity-0 z-10" />
+            <div class="pointer-events-none flex flex-col items-center justify-center py-10 px-6 text-center">
+              <div id="dropIcon" class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.05] text-rose-400">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
                 </svg>
               </div>
-              <p id="fileName" class="text-sm font-medium text-zinc-400">
-                Drop video here or <span class="text-rose-400">browse files</span>
+              <p class="text-sm font-medium text-zinc-400">
+                Drop videos here or <span class="text-rose-400">browse files</span>
               </p>
-              <p class="mt-1 text-xs text-zinc-600">MP4, MOV, MKV, AVI — Max 500MB</p>
+              <p class="mt-1 text-xs text-zinc-600">Concurrently transcoded to 1080p &amp; 720p HLS · Max 500MB each</p>
             </div>
           </div>
         </div>
 
-        <!-- Progress (hidden by default) -->
-        <div id="progressContainer" class="hidden mb-5 rounded-xl border border-white/[0.07] bg-white/[0.03] px-4 py-3.5">
-          <div class="mb-2 flex items-center justify-between">
-            <span id="progressText" class="text-xs font-medium text-rose-400">Uploading…</span>
-            <span id="progressPercent" class="text-xs font-medium tabular-nums text-zinc-500">0%</span>
-          </div>
-          <div class="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
-            <div
-              id="progressBar"
-              class="h-full w-0 rounded-full bg-gradient-to-r from-rose-600 to-rose-400 transition-all duration-300"
-            ></div>
-          </div>
+        <!-- Selected files pipeline list -->
+        <div id="pipelineList" class="space-y-3 mb-6 hidden">
+          <h3 class="text-xs font-semibold text-zinc-500 tracking-wider uppercase mb-1">Pipeline queue</h3>
+          <!-- Dynamic upload items appended here -->
         </div>
 
         <!-- CTA -->
         <button
-          onclick="startPipeline()"
+          onclick="startMultiPipeline()"
           id="uploadBtn"
-          class="w-full flex items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-rose-900/30
-                 transition-all duration-150 hover:bg-rose-500 active:scale-[0.98]
-                 focus:outline-none focus:ring-2 focus:ring-rose-500/50 focus:ring-offset-2 focus:ring-offset-[#09090b]"
+          class="w-full flex items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-rose-900/30
+                 transition-all duration-150 hover:bg-rose-500 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed
+                 focus:outline-none focus:ring-2 focus:ring-rose-500/50"
         >
           <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/>
           </svg>
-          Initialize Pipeline
+          Start Transcoding Pipelines
         </button>
       </div>
 
-      <p class="mt-4 text-center text-xs text-zinc-700">Powered by FFmpeg &amp; Celery</p>
+      <p class="mt-4 text-center text-xs text-zinc-700">Powered by FFmpeg, Redis &amp; Celery Concurrency</p>
     </div>
   </main>
 
-  <!-- ── SCRIPTS (logic 100% untouched) ──────────────────────────────── -->
   <script>
-    // Drop-zone drag feedback
-    const dropZone = document.getElementById('dropZone');
+    const dropZone     = document.getElementById('dropZone');
+    const fileInput    = document.getElementById('files');
+    const pipelineList = document.getElementById('pipelineList');
+    const uploadBtn    = document.getElementById('uploadBtn');
+
+    let filesQueue = [];
+
+    // Drag-drop highlights
     dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drop-active'); });
     dropZone.addEventListener('dragleave', ()  => dropZone.classList.remove('drop-active'));
-    dropZone.addEventListener('drop',      ()  => dropZone.classList.remove('drop-active'));
-
-    // Update filename text when selected
-    document.getElementById('file').addEventListener('change', function (e) {
-        if (e.target.files[0]) document.getElementById('fileName').innerText = e.target.files[0].name;
+    dropZone.addEventListener('drop',      e => {
+      e.preventDefault();
+      dropZone.classList.remove('drop-active');
+      handleSelectedFiles(e.dataTransfer.files);
     });
 
-    function startPipeline() {
-        const title = document.getElementById('title').value;
-        const fileInput = document.getElementById('file').files[0];
-        const btn = document.getElementById('uploadBtn');
-        const progressContainer = document.getElementById('progressContainer');
-        const progressBar = document.getElementById('progressBar');
-        const progressPercent = document.getElementById('progressPercent');
-        const progressText = document.getElementById('progressText');
+    fileInput.addEventListener('change', e => {
+      handleSelectedFiles(e.target.files);
+    });
 
-        if (!title || !fileInput) return alert("Title and Media required.");
+    function handleSelectedFiles(filesList) {
+      if (filesList.length === 0) return;
 
-        // Enforce 500MB size limit (500 * 1024 * 1024 = 524288000 bytes)
-        if (fileInput.size > 524288000) {
-            return alert("File size exceeds the 500MB limit. Please choose a smaller video.");
+      pipelineList.classList.remove('hidden');
+
+      for (let file of filesList) {
+        // Enforce 500MB size check
+        if (file.size > 524288000) {
+          alert(`File "${file.name}" exceeds the 500MB size limit and was skipped.`);
+          continue;
         }
 
-        btn.disabled = true;
-        btn.classList.add('opacity-50', 'cursor-not-allowed');
-        progressContainer.classList.remove('hidden');
-
-        const formData = new FormData();
-        formData.append('title', title);
-        formData.append('original_file', fileInput);
-
-        // Using XHR for exact upload percentage
-        const xhr = new XMLHttpRequest();
-
-        xhr.upload.addEventListener('progress', function (e) {
-            if (e.lengthComputable) {
-                const percentComplete = Math.round((e.loaded / e.total) * 100);
-                progressBar.style.width = percentComplete + '%';
-                progressPercent.innerText = percentComplete + '%';
-            }
+        // Add to tracking queue
+        const fileId = 'file-' + Math.random().toString(36).substr(2, 9);
+        filesQueue.push({
+          id: fileId,
+          file: file,
+          status: 'queued',
+          progress: 0,
+          videoId: null
         });
 
-        xhr.addEventListener('load', function () {
-            if (xhr.status === 201) {
-                const data = JSON.parse(xhr.responseText);
-                progressText.innerText = "Transcoding in Celery Worker...";
-                progressText.classList.replace('text-rose-400', 'text-amber-400');
-                progressBar.classList.replace('from-rose-600', 'from-amber-500');
-                progressBar.classList.replace('to-rose-400', 'to-yellow-400');
-                progressBar.classList.add('animate-pulse');
-                pollStatus(data.id);
-            } else {
-                progressText.innerText = "Upload Failed.";
-                progressText.classList.replace('text-rose-400', 'text-red-500');
-            }
-        });
-
-        xhr.open('POST', '/api/videos/', true);
-        xhr.send(formData);
+        // Add row inside pipeline list
+        pipelineList.innerHTML += `
+          <div id="${fileId}" class="rounded-xl border border-white/[0.05] bg-white/[0.015] p-3.5 transition-all">
+            <div class="flex items-center justify-between gap-3 mb-2">
+              <span class="text-sm font-medium text-white truncate max-w-[280px]" title="${file.name}">${file.name}</span>
+              <span id="${fileId}-percent" class="text-xs font-semibold text-zinc-500 tabular-nums">0%</span>
+            </div>
+            <!-- Progress bar -->
+            <div class="h-1.5 w-full rounded-full bg-white/[0.05] overflow-hidden mb-2">
+              <div id="${fileId}-bar" class="h-full w-0 bg-rose-600 rounded-full transition-all duration-300"></div>
+            </div>
+            <!-- Status label -->
+            <div class="flex items-center justify-between text-[11px] font-medium">
+              <span id="${fileId}-status" class="text-zinc-500">Queued in pipeline</span>
+              <span id="${fileId}-bytes" class="text-zinc-600 tabular-nums">${(file.size / (1024*1024)).toFixed(1)} MB</span>
+            </div>
+          </div>
+        `;
+      }
     }
 
-    function pollStatus(id) {
-        const progressText = document.getElementById('progressText');
-        const btn = document.getElementById('uploadBtn');
+    async function startMultiPipeline() {
+      const activeJobs = filesQueue.filter(j => j.status === 'queued');
+      if (activeJobs.length === 0) return alert("Select new video files first.");
 
-        const interval = setInterval(async () => {
-            const res = await fetch(`/api/videos/${id}/`);
-            const data = await res.json();
+      uploadBtn.disabled = true;
+      uploadBtn.classList.add('opacity-40', 'cursor-not-allowed');
 
-            if (data.status === 'done') {
-                clearInterval(interval);
-                document.getElementById('progressBar').classList.remove('animate-pulse');
-                document.getElementById('progressBar').classList.replace('from-amber-500', 'from-emerald-500');
-                document.getElementById('progressBar').classList.replace('to-yellow-400', 'to-green-400');
-                progressText.innerHTML = `<span class="text-emerald-400">Pipeline Complete! <a href="/player/?id=${data.id}" class="underline hover:text-white ml-2">Watch Now &rarr;</a></span>`;
-                btn.innerText = "Process Another";
-                btn.disabled = false;
-                btn.classList.remove('opacity-50', 'cursor-not-allowed');
-            } else if (data.status === 'failed') {
-                clearInterval(interval);
-                progressText.innerHTML = `<span class="text-red-500">FFmpeg Error. Check Worker Logs.</span>`;
-            }
-        }, 2000);
+      // Process all queued files concurrently in the background!
+      activeJobs.forEach(job => {
+        uploadFile(job);
+      });
+    }
+
+    function uploadFile(job) {
+      job.status = 'uploading';
+      const statusEl = document.getElementById(`${job.id}-status`);
+      const percentEl = document.getElementById(`${job.id}-percent`);
+      const barEl = document.getElementById(`${job.id}-bar`);
+
+      statusEl.innerText = "Uploading to server...";
+      statusEl.classList.replace('text-zinc-500', 'text-rose-400');
+
+      const formData = new FormData();
+      // Use filename (minus extension) as video title
+      const rawTitle = job.file.name.replace(/\.[^/.]+$/, "");
+      formData.append('title', rawTitle);
+      formData.append('original_file', job.file);
+
+      const xhr = new XMLHttpRequest();
+
+      // Track upload percentage
+      xhr.upload.addEventListener('progress', e => {
+        if (e.lengthComputable) {
+          const percent = Math.round((e.loaded / e.total) * 100);
+          job.progress = percent;
+          barEl.style.width = percent + '%';
+          percentEl.innerText = percent + '%';
+        }
+      });
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status === 201) {
+          const responseData = JSON.parse(xhr.responseText);
+          job.status = 'processing';
+          job.videoId = responseData.id;
+          
+          statusEl.innerText = "Transcoding in worker queue...";
+          statusEl.className = "text-amber-400 animate-pulse";
+          barEl.className = "h-full w-full bg-gradient-to-r from-amber-500 to-yellow-500 animate-pulse rounded-full";
+          percentEl.innerText = "Processing";
+
+          // Start polling specific stages of transcode pipeline
+          pollProcessingStatus(job);
+        } else {
+          job.status = 'failed';
+          statusEl.innerText = "Upload failed.";
+          statusEl.className = "text-red-500";
+          barEl.className = "h-full w-full bg-red-600 rounded-full";
+          percentEl.innerText = "Error";
+        }
+      });
+
+      xhr.open('POST', '/api/videos/', true);
+      // Retrieve csrf cookie token
+      xhr.setRequestHeader('X-CSRFToken', getCookie('csrftoken'));
+      xhr.send(formData);
+    }
+
+    function pollProcessingStatus(job) {
+      const statusEl = document.getElementById(`${job.id}-status`);
+      const percentEl = document.getElementById(`${job.id}-percent`);
+      const barEl = document.getElementById(`${job.id}-bar`);
+
+      const statusMap = {
+        'analyzing':         'Analyzing metadata (ffprobe)…',
+        'transcoding_1080p': 'Encoding HLS 1080p Stream…',
+        'transcoding_720p':  'Encoding HLS 720p Stream…',
+        'generating_gif':    'Generating animated GIF preview…',
+        'generating_assets': 'Generating tiles & thumbnail…'
+      };
+
+      const interval = setInterval(async () => {
+        const res = await fetch(`/api/videos/${job.videoId}/`);
+        const data = await res.json();
+
+        if (statusMap[data.status]) {
+          statusEl.innerText = statusMap[data.status];
+        }
+
+        if (data.status === 'done') {
+          clearInterval(interval);
+          job.status = 'done';
+          statusEl.innerHTML = `<span class="text-emerald-400">Complete! <a href="/player/?id=${job.videoId}" class="underline hover:text-white ml-1.5 font-bold">Watch &rarr;</a></span>`;
+          statusEl.className = "";
+          barEl.className = "h-full w-full bg-gradient-to-r from-emerald-500 to-green-500 rounded-full";
+          percentEl.innerText = "Success";
+          checkAllJobsFinished();
+        } else if (data.status === 'failed') {
+          clearInterval(interval);
+          job.status = 'failed';
+          statusEl.innerText = "Transcoding pipeline failed.";
+          statusEl.className = "text-red-500";
+          barEl.className = "h-full w-full bg-red-600 rounded-full";
+          percentEl.innerText = "Failed";
+          checkAllJobsFinished();
+        }
+      }, 2000);
+    }
+
+    function checkAllJobsFinished() {
+      const pendingJobs = filesQueue.filter(j => ['queued', 'uploading', 'processing'].includes(j.status));
+      if (pendingJobs.length === 0) {
+        uploadBtn.disabled = false;
+        uploadBtn.innerText = "Initialize Pipeline";
+        uploadBtn.classList.remove('opacity-40', 'cursor-not-allowed');
+      }
+    }
+
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
     }
   </script>
 </body>
-
 </html>

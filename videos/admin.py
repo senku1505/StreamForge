@@ -13,11 +13,12 @@ admin.site.index_title = "Video Management"
 
 @admin.register(Video)
 class VideoAdmin(admin.ModelAdmin):
-    list_display    = ('title', 'status', 'duration_display', 'original_size', 'created_at')
+    list_display    = ('title', 'status', 'duration_display', 'resolution', 'fps', 'codec', 'original_size', 'created_at')
     list_filter     = ('status', 'created_at')
     search_fields   = ('title',)
     readonly_fields = ('created_at', 'duration', 'status', 'hls_master',
-                       'thumbnail', 'sprite_sheet')
+                       'thumbnail', 'sprite_sheet', 'gif_preview',
+                       'resolution', 'codec', 'fps', 'bitrate')
     actions = ['delete_with_files']
 
     # ── Custom columns ────────────────────────────────────────────────

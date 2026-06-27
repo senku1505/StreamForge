@@ -3,10 +3,14 @@ from django.db import models
 
 class Video(models.Model):
     STATUS_CHOICES = [
-        ('pending',    'Pending'),
-        ('processing', 'Processing'),
-        ('done',       'Done'),
-        ('failed',     'Failed'),
+        ('pending',          'Pending'),
+        ('analyzing',        'Analyzing'),
+        ('transcoding_1080p','Transcoding 1080p'),
+        ('transcoding_720p', 'Transcoding 720p'),
+        ('generating_gif',   'Generating Preview'),
+        ('generating_assets','Generating Assets'),
+        ('done',             'Done'),
+        ('failed',           'Failed'),
     ]
 
     title         = models.CharField(max_length=255)
@@ -14,8 +18,13 @@ class Video(models.Model):
     hls_master    = models.FileField(upload_to='hls/', null=True, blank=True)
     thumbnail     = models.ImageField(upload_to='thumbnails/', null=True, blank=True)
     sprite_sheet  = models.ImageField(upload_to='sprites/',    null=True, blank=True)
+    gif_preview   = models.FileField(upload_to='previews/',    null=True, blank=True)
     duration      = models.FloatField(null=True, blank=True)   # seconds
-    status        = models.CharField(max_length=20, default='pending', choices=STATUS_CHOICES)
+    fps           = models.CharField(max_length=20, null=True, blank=True)
+    codec         = models.CharField(max_length=50, null=True, blank=True)
+    resolution    = models.CharField(max_length=50, null=True, blank=True)
+    bitrate       = models.CharField(max_length=50, null=True, blank=True)
+    status        = models.CharField(max_length=30, default='pending', choices=STATUS_CHOICES)
     created_at    = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -46,8 +55,8 @@ class Video(models.Model):
         except Exception:
             pass
 
-        # Remove individual media files
-        for field in (self.thumbnail, self.sprite_sheet, self.original_file):
+        # Remove individual media files including GIF preview
+        for field in (self.thumbnail, self.sprite_sheet, self.gif_preview, self.original_file):
             try:
                 if field and field.name:
                     field.delete(save=False)
