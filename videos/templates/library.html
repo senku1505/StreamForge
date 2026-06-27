@@ -6,9 +6,21 @@
     <title>StreamForge | Library</title>
 </head>
 
-<body class="bg-gray-900 text-white min-h-screen p-8">
-    <h1 class="text-4xl font-black text-red-600 mb-8">StreamForge</h1>
-    <div id="grid" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+<body
+    class="bg-[#0f172a] text-slate-200 min-h-screen p-8 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-[#0f172a] to-black">
+    <div class="max-w-7xl mx-auto">
+        <header class="flex justify-between items-center mb-12 border-b border-slate-800 pb-6">
+            <div class="flex items-center space-x-3">
+                <div class="h-8 w-8 bg-gradient-to-br from-rose-500 to-red-700 rounded-lg"></div>
+                <h1 class="text-3xl font-black tracking-tight text-white">StreamForge</h1>
+            </div>
+            <a href="/upload/"
+                class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm font-semibold transition-colors">Upload
+                New</a>
+        </header>
+
+        <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+        </div>
     </div>
 
     <script>
@@ -20,17 +32,26 @@
             videos.forEach(vid => {
                 const isDone = vid.status === 'done';
                 const link = isDone ? `/player/?id=${vid.id}` : '#';
-                const opacity = isDone ? 'opacity-100 hover:scale-105' : 'opacity-50 grayscale cursor-not-allowed';
-                const badge = isDone ? '' : '<span class="absolute top-2 right-2 bg-yellow-500 text-black text-xs px-2 py-1 rounded">Processing</span>';
 
-                // Fallback thumbnail if processing
-                const thumb = vid.thumbnail ? vid.thumbnail : 'https://via.placeholder.com/640x360.png?text=Processing...';
+                // Card styling based on status
+                const cardClass = isDone ? 'hover:-translate-y-2 hover:shadow-2xl hover:shadow-rose-500/10' : 'opacity-60 cursor-not-allowed';
+                const thumb = vid.thumbnail ? vid.thumbnail : 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop';
+
+                const badge = isDone
+                    ? '<span class="absolute top-3 right-3 bg-emerald-500/90 backdrop-blur text-white text-xs font-bold px-2.5 py-1 rounded-md shadow-lg">READY</span>'
+                    : '<span class="absolute top-3 right-3 bg-amber-500/90 backdrop-blur text-black text-xs font-bold px-2.5 py-1 rounded-md shadow-lg animate-pulse">PROCESSING</span>';
 
                 grid.innerHTML += `
-                    <a href="${link}" class="block relative transition-all duration-300 ${opacity}">
-                        <img src="${thumb}" class="w-full aspect-video object-cover rounded-lg border border-gray-700 shadow-lg">
-                        ${badge}
-                        <h3 class="mt-2 text-lg font-semibold truncate">${vid.title}</h3>
+                    <a href="${link}" class="group block relative transition-all duration-300 bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden ${cardClass}">
+                        <div class="aspect-video relative overflow-hidden bg-slate-900">
+                            <img src="${thumb}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
+                            <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-80"></div>
+                            ${badge}
+                        </div>
+                        <div class="p-5">
+                            <h3 class="text-lg font-bold text-white truncate mb-1">${vid.title}</h3>
+                            <p class="text-xs text-slate-500 font-mono">${new Date(vid.created_at).toLocaleDateString()}</p>
+                        </div>
                     </a>
                 `;
             });
