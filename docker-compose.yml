@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: sf_redis
+    ports:
+      - "6379:6379"
+
+  web:
+    build: .
+    container_name: sf_web
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+
+  worker:
+    build: .
+    container_name: sf_worker
+    command: celery -A streamforge worker --loglevel=info
+    volumes:
+      - .:/app
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - redis

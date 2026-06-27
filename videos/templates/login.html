@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="StreamForge Access — Log in or sign up." />
+  <title>StreamForge · Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { font-family: 'Inter', sans-serif; box-sizing: border-box; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-up { animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) both; }
+  </style>
+</head>
+
+<body class="bg-[#09090b] text-zinc-200 min-h-screen antialiased flex flex-col justify-center items-center px-4">
+
+  <!-- auth card container -->
+  <div class="w-full max-w-[420px] animate-fade-up space-y-6">
+    
+    <!-- logo / title -->
+    <div class="text-center">
+      <div class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-rose-700 shadow shadow-rose-900/50 mb-3">
+        <svg class="w-5 h-5 text-white" viewBox="0 0 14 14" fill="currentColor">
+          <rect x="1" y="1" width="4.5" height="12" rx="1"/>
+          <rect x="8.5" y="1" width="4.5" height="12" rx="1"/>
+        </svg>
+      </div>
+      <h1 id="formTitle" class="text-2xl font-bold tracking-tight text-white">Welcome back</h1>
+      <p id="formSub" class="text-xs text-zinc-500 mt-1">Enter your details to log in to your account</p>
+    </div>
+
+    <!-- forms block -->
+    <div class="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-6 shadow-2xl shadow-black/60 space-y-5">
+      
+      <!-- inputs -->
+      <div class="space-y-4">
+        <!-- email input (hidden on login mode, shown on signup mode) -->
+        <div id="emailContainer" class="hidden">
+          <label class="block text-xs font-semibold text-zinc-400 mb-1.5">Email address</label>
+          <input type="email" id="email" placeholder="you@example.com"
+            class="w-full rounded-lg border border-white/[0.08] bg-white/[0.02] px-3.5 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-rose-500/40 focus:border-rose-500/50" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-zinc-400 mb-1.5">Username</label>
+          <input type="text" id="username" placeholder="Username (6-20 characters)"
+            class="w-full rounded-lg border border-white/[0.08] bg-white/[0.02] px-3.5 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-rose-500/40 focus:border-rose-500/50" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-zinc-400 mb-1.5">Password</label>
+          <input type="password" id="password" placeholder="Password (6-20 characters)"
+            class="w-full rounded-lg border border-white/[0.08] bg-white/[0.02] px-3.5 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-rose-500/40 focus:border-rose-500/50" />
+        </div>
+      </div>
+
+      <!-- auth actions -->
+      <button
+        onclick="submitAuthForm()"
+        id="submitBtn"
+        class="w-full flex items-center justify-center gap-1.5 rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-500 active:scale-[0.98]"
+      >
+        Sign In
+      </button>
+
+      <!-- demo login button -->
+      <div class="relative flex py-1.5 items-center">
+        <div class="flex-grow border-t border-white/[0.06]"></div>
+        <span class="flex-shrink mx-3 text-[10px] font-semibold text-zinc-600 tracking-wider uppercase">Or try guest mode</span>
+        <div class="flex-grow border-t border-white/[0.06]"></div>
+      </div>
+
+      <button
+        onclick="loginAsGuest()"
+        class="w-full flex items-center justify-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-sm font-bold text-white transition hover:bg-white/[0.07] hover:border-white/[0.12] active:scale-[0.98]"
+      >
+        <svg class="h-4.5 w-4.5 text-rose-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/>
+        </svg>
+        Log in as Guest / Demo User
+      </button>
+
+    </div>
+
+    <!-- switch signup/login footer link -->
+    <p class="text-center text-xs text-zinc-500">
+      <span id="footerText">New to StreamForge?</span>
+      <button onclick="toggleAuthMode()" id="switchLink" class="text-rose-400 hover:underline font-semibold ml-1 focus:outline-none">Create an account</button>
+    </p>
+
+  </div>
+
+  <script>
+    let isSignupMode = false;
+
+    // verify values length range
+    function checkBounds(str, min, max) {
+      return str.length >= min && str.length <= max;
+    }
+
+    function toggleAuthMode() {
+      isSignupMode = !isSignupMode;
+      const titleEl     = document.getElementById('formTitle');
+      const subEl       = document.getElementById('formSub');
+      const emailEl     = document.getElementById('emailContainer');
+      const submitBtn   = document.getElementById('submitBtn');
+      const footerText  = document.getElementById('footerText');
+      const switchLink  = document.getElementById('switchLink');
+
+      if (isSignupMode) {
+        titleEl.innerText = "Create an account";
+        subEl.innerText = "Fill in the details to setup your developer studio";
+        emailEl.classList.remove('hidden');
+        submitBtn.innerText = "Register & Enter Studio";
+        footerText.innerText = "Already have an account?";
+        switchLink.innerText = "Sign in here";
+      } else {
+        titleEl.innerText = "Welcome back";
+        subEl.innerText = "Enter your details to log in to your account";
+        emailEl.classList.add('hidden');
+        submitBtn.innerText = "Sign In";
+        footerText.innerText = "New to StreamForge?";
+        switchLink.innerText = "Create an account";
+      }
+    }
+
+    async function submitAuthForm() {
+      const email = document.getElementById('email').value.trim();
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value.trim();
+
+      // validation check
+      if (!username || !password) {
+        return alert("Username and Password are required.");
+      }
+
+      if (!checkBounds(username, 6, 20)) {
+        return alert("Username must be between 6 and 20 characters.");
+      }
+
+      if (!checkBounds(password, 6, 20)) {
+        return alert("Password must be between 6 and 20 characters.");
+      }
+
+      if (isSignupMode && !email) {
+        return alert("Email address is required for registration.");
+      }
+
+      const endpoint = isSignupMode ? '/api/signup/' : '/api/login/';
+      const payload  = isSignupMode ? { email, username, password } : { username, password };
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (res.ok && data.token) {
+        localStorage.setItem('sf_token', data.token);
+        localStorage.setItem('sf_username', data.username);
+        window.location.href = '/library/'; // redirect to Public Feed
+      } else {
+        alert(data.error || "Authentication failed. Please check inputs.");
+      }
+    }
+
+    async function loginAsGuest() {
+      const res = await fetch('/api/login/guest/', {
+        method: 'POST'
+      });
+      const data = await res.json();
+      if (res.ok && data.token) {
+        localStorage.setItem('sf_token', data.token);
+        localStorage.setItem('sf_username', data.username);
+        window.location.href = '/library/'; // redirect to Public Feed
+      } else {
+        alert("Failed to log in as guest.");
+      }
+    }
+  </script>
+</body>
+</html>

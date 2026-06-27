@@ -1,7 +1,7 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 class Video(models.Model):
-    # status codes for celery transcode tracking
     STATUS_CHOICES = [
         ('pending',          'Pending'),
         ('analyzing',        'Analyzing'),
@@ -13,6 +13,7 @@ class Video(models.Model):
     ]
 
     title         = models.CharField(max_length=255)
+    owner         = models.ForeignKey(User, on_delete=models.CASCADE, related_name='videos', null=True, blank=True)
     original_file = models.FileField(upload_to='raw/')
     hls_master    = models.FileField(upload_to='hls/', null=True, blank=True)
     thumbnail     = models.ImageField(upload_to='thumbnails/', null=True, blank=True)
@@ -33,7 +34,7 @@ class Video(models.Model):
 
     @property
     def duration_formatted(self):
-        # format duration to M:SS
+        # format duration to MIN:SS
         if not self.duration:
             return None
         m = int(self.duration // 60)

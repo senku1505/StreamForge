@@ -1,0 +1,9 @@
+django>=4.0,<5.0
+djangorestframework
+django-cors-headers
+celery
+redis
+pyjwt
+gunicorn
+boto3
+django-storages

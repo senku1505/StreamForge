@@ -4,6 +4,7 @@ from .models import Video
 
 class VideoSerializer(serializers.ModelSerializer):
     original_size_formatted = serializers.SerializerMethodField()
+    owner_username = serializers.CharField(source='owner.username', read_only=True)
 
     class Meta:
         model = Video
