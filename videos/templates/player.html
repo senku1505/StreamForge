@@ -18,6 +18,9 @@
   <!-- Sprite-thumbnail hover preview -->
   <script src="https://unpkg.com/videojs-sprite-thumbnails@1/dist/videojs-sprite-thumbnails.min.js"></script>
 
+  <!-- VideoJS Hotkeys plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/videojs-hotkeys@0.2/dist/videojs-hotkeys.min.js"></script>
+
   <!-- Tailwind + Inter -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -239,6 +242,14 @@
         // Quality selector (reads renditions from master.m3u8 automatically)
         vjsPlayer.hlsQualitySelector({ displayCurrentQuality: true });
 
+        // Hotkeys configuration for seamless playback
+        vjsPlayer.hotkeys({
+          volumeStep: 0.1,
+          seekStep: 5,
+          enableModifiersForNumbers: false,
+          alwaysCaptureHotkeys: true
+        });
+
         // Sprite thumbnail hover preview
         if (currentVideoData.sprite_sheet && currentVideoData.duration) {
           const numFrames = Math.ceil(currentVideoData.duration / 5);
@@ -280,18 +291,6 @@
       if (currentIndex >= allVideos.length - 1) return;
       window.location.href = `/player/?id=${allVideos[currentIndex + 1].id}`;
     }
-
-    // ── Keyboard shortcuts (Video.js handles most natively) ──────────
-    document.addEventListener('keydown', e => {
-      if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
-      if (!vjsPlayer) return;
-      switch (e.key) {
-        case 'ArrowRight': e.preventDefault(); vjsPlayer.currentTime(vjsPlayer.currentTime() + 5);  break;
-        case 'ArrowLeft':  e.preventDefault(); vjsPlayer.currentTime(vjsPlayer.currentTime() - 5);  break;
-        case 'ArrowUp':    e.preventDefault(); vjsPlayer.volume(Math.min(1, vjsPlayer.volume() + 0.1)); break;
-        case 'ArrowDown':  e.preventDefault(); vjsPlayer.volume(Math.max(0, vjsPlayer.volume() - 0.1)); break;
-      }
-    });
 
     loadVideo();
   </script>

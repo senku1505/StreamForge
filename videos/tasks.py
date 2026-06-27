@@ -36,11 +36,10 @@ def process_video(video_id):
     hls_dir   = os.path.join(media_root, 'hls', str(video_id))
     dir_1080  = os.path.join(hls_dir, '1080p')
     dir_720   = os.path.join(hls_dir, '720p')
-    dir_480   = os.path.join(hls_dir, '480p')
     thumb_dir = os.path.join(media_root, 'thumbnails')
     spr_dir   = os.path.join(media_root, 'sprites')
 
-    for d in [dir_1080, dir_720, dir_480, thumb_dir, spr_dir]:
+    for d in [dir_1080, dir_720, thumb_dir, spr_dir]:
         os.makedirs(d, exist_ok=True)
 
     try:
@@ -79,19 +78,7 @@ def process_video(video_id):
             os.path.join(dir_720, 'stream.m3u8'),
         ])
 
-        # ── 4. HLS 480p rendition ─────────────────────────────────────
-        _run([
-            'ffmpeg', '-y', '-i', input_path,
-            '-vf', 'scale=-2:480',
-            '-c:v', 'libx264', '-crf', '23', '-preset', 'fast',
-            '-c:a', 'aac', '-b:a', '96k',
-            '-hls_time', '6',
-            '-hls_playlist_type', 'vod',
-            '-hls_segment_filename', os.path.join(dir_480, 'seg%03d.ts'),
-            os.path.join(dir_480, 'stream.m3u8'),
-        ])
-
-        # ── 5. HLS master playlist ────────────────────────────────────
+        # ── 4. HLS master playlist ────────────────────────────────────
         master_path = os.path.join(hls_dir, 'master.m3u8')
         with open(master_path, 'w') as f:
             f.write(
@@ -101,8 +88,6 @@ def process_video(video_id):
                 "1080p/stream.m3u8\n"
                 '#EXT-X-STREAM-INF:BANDWIDTH=2800000,RESOLUTION=1280x720,NAME="720p"\n'
                 "720p/stream.m3u8\n"
-                '#EXT-X-STREAM-INF:BANDWIDTH=1400000,RESOLUTION=854x480,NAME="480p"\n'
-                "480p/stream.m3u8\n"
             )
 
         # ── 5. Thumbnail (at 10% through video, minimum 1 s) ─────────

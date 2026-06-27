@@ -181,7 +181,7 @@
           </div>
           <h3 class="font-semibold text-white mb-2">Auto-Transcoded via Celery</h3>
           <p class="text-sm text-zinc-500 leading-relaxed">Celery workers pick up the job from Redis and run FFmpeg to
-            produce HLS segments at 720p and 480p, extract a thumbnail, and build a sprite sheet.</p>
+            produce HLS segments at 1080p and 720p, extract a thumbnail, and build a sprite sheet.</p>
         </div>
         <div class="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
           <div
@@ -234,7 +234,7 @@
               class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold">3</span>
             <span class="text-xs font-semibold text-zinc-300">Transcode</span>
           </div>
-          <p class="text-xs text-zinc-500">Celery worker runs FFmpeg to produce HLS 720p + 480p, thumbnail, and sprite
+          <p class="text-xs text-zinc-500">Celery worker runs FFmpeg to produce HLS 1080p + 720p, thumbnail, and sprite
             sheet</p>
         </div>
         <!-- Step 4 -->
@@ -262,7 +262,7 @@
         </div>
         <div class="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4"><span
             class="text-xs font-semibold text-blue-400">3 · Transcode</span>
-          <p class="text-xs text-zinc-500 mt-1">Celery runs FFmpeg → HLS 720p + 480p + thumbnail + sprite sheet</p>
+          <p class="text-xs text-zinc-500">Celery runs FFmpeg &rarr; HLS 1080p + 720p + thumbnail + sprite sheet</p>
         </div>
         <div class="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4"><span
             class="text-xs font-semibold text-emerald-400">4 · Stream</span>
@@ -281,8 +281,8 @@
               </svg>
             </span>
             <div>
-              <p class="text-zinc-300 font-medium">HLS 720p</p>
-              <p class="text-zinc-600">6s segments · 2.8 Mbps</p>
+              <p class="text-zinc-300 font-medium">HLS 1080p</p>
+              <p class="text-zinc-600">6s segments &middot; 5.0 Mbps</p>
             </div>
           </div>
           <div class="flex items-start gap-2">
@@ -292,8 +292,8 @@
               </svg>
             </span>
             <div>
-              <p class="text-zinc-300 font-medium">HLS 480p</p>
-              <p class="text-zinc-600">6s segments · 1.4 Mbps</p>
+              <p class="text-zinc-300 font-medium">HLS 720p</p>
+              <p class="text-zinc-600">6s segments &middot; 2.8 Mbps</p>
             </div>
           </div>
           <div class="flex items-start gap-2">

@@ -172,12 +172,12 @@
                 </a>
                 <div class="flex items-center justify-between">
                   <p class="text-xs text-zinc-600">${new Date(vid.created_at).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})}</p>
-                  ${isDone ? '<span class="text-xs text-zinc-600">HLS · 1080p · 720p · 480p</span>' : ''}
+                  ${isDone ? '<span class="text-xs text-zinc-600">HLS · 1080p · 720p</span>' : ''}
                 </div>
               </div>
               <button
                 onclick="deleteVideo(event, ${vid.id})"
-                class="rounded-lg p-1.5 text-zinc-600 hover:bg-white/[0.06] hover:text-rose-400 transition flex-shrink-0"
+                class="rounded-lg p-1.5 text-zinc-400 hover:bg-rose-500/10 hover:text-rose-500 transition flex-shrink-0"
                 title="Delete video"
               >
                 <svg class="h-4.5 w-4.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
