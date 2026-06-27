@@ -7,7 +7,7 @@ from django.conf import settings
 from .models import Video
 
 def _run(cmd):
-    # runs shell stuff safely
+    # runs shell stuff
     result = subprocess.run(cmd, capture_output=True)
     if result.returncode != 0:
         raise subprocess.CalledProcessError(result.returncode, cmd, stderr=result.stderr)
@@ -30,7 +30,7 @@ def check_and_enforce_storage_limit():
                     except OSError:
                         pass
                         
-    limit = 5 * 1024 * 1024 * 1024 # 5 gigs
+    limit = 5 * 1024 * 1024 * 1024 # 5 GB
     if total_size > limit:
         # delete oldest 2 vids
         oldest = Video.objects.all().order_by('created_at')[:2]
