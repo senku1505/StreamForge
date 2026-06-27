@@ -43,7 +43,6 @@ class VideoDetailView(APIView):
         return Response(serializer.data)
 
     def delete(self, request, pk):
-        # wipe it out
         try:
             video = Video.objects.get(pk=pk)
         except Video.DoesNotExist:
