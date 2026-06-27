@@ -1,3 +1,4 @@
+# videos/views.py
 from .tasks import process_video
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -7,15 +8,18 @@ from .serializers import VideoSerializer
 
 
 class VideoListView(APIView):
+    # disable auth stuff so deletion doesnt get blocked by csrf
     authentication_classes = []
     permission_classes = []
 
     def get(self, request):
+        # grab all videos
         videos = Video.objects.all()
         serializer = VideoSerializer(videos, many=True, context={'request': request})
         return Response(serializer.data)
 
     def post(self, request):
+        # handle new video upload
         serializer = VideoSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             video = serializer.save()
@@ -25,10 +29,12 @@ class VideoListView(APIView):
 
 
 class VideoDetailView(APIView):
+    # public endpoints are fine for dev
     authentication_classes = []
     permission_classes = []
 
     def get(self, request, pk):
+        # fetch single vid
         try:
             video = Video.objects.get(pk=pk)
         except Video.DoesNotExist:
@@ -37,6 +43,7 @@ class VideoDetailView(APIView):
         return Response(serializer.data)
 
     def delete(self, request, pk):
+        # wipe it out
         try:
             video = Video.objects.get(pk=pk)
         except Video.DoesNotExist:
