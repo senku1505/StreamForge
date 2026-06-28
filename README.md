@@ -6,24 +6,24 @@ StreamForge is a full-stack distributed video processing and sharing platform th
 
 ## Project Features
 
-- Adaptive HLS Streaming: Automatically segments uploads into 6-second fragments and compiles multi-bitrate playlists (1080p and 720p).
-- Concurrent Upload Dashboard: Drag-and-drop file uploader supporting simultaneous uploads and real-time processing stage indicators.
-- JWT Authentication Backend: Secure custom authentication using JSON Web Tokens.
-- Public Feed & Personal Page Isolation: Multi-user feeds showing uploader credits, with delete authorizations restricted to owner accounts.
-- Sprite Sheet Hover Previews: Fast seek bar previews and library thumbnails animated with CSS background shifts on sprite sheets.
-- Detailed Metadata Side Panel: Side panel rendering code specifications, frame rates (FPS), bitrates, resolution, and formats.
-- Storage Limit Manager: Auto-deletes the oldest 2 videos when the media directory exceeds a 5 GB disk quota.
+- **Adaptive HLS Streaming:** Automatically segments uploads into 6-second fragments and compiles multi-bitrate playlists (1080p and 720p).
+- **Concurrent Upload Dashboard:** Drag-and-drop file uploader supporting simultaneous uploads and real-time processing stage indicators.
+- **JWT Authentication Backend:** Secure custom authentication using JSON Web Tokens.
+- **Public Feed & Personal Page Isolation:** Multi-user feeds showing uploader credits, with delete authorizations restricted to owner accounts.
+- **Sprite Sheet Hover Previews:** Fast seek bar previews and library thumbnails animated with CSS background shifts on sprite sheets.
+- **Detailed Metadata Side Panel:** Side panel rendering code specifications, frame rates (FPS), bitrates, resolution, and formats.
+- **Storage Limit Manager:** Auto-deletes the oldest 2 videos when the media directory exceeds a 5 GB disk quota.
 
 ---
 
 ## Tech Stack Used
 
-- Backend: Django, Django REST Framework (DRF)
-- Database: SQLite (Development), PostgreSQL/RDS (Production)
-- Distributed Worker Queue: Celery, Redis
-- Processing Engine: FFmpeg, FFprobe
-- Frontend: HTML5, CSS3, Tailwind CSS, Javascript, Plyr (Player engine)
-- Containerization: Docker, Docker Compose
+- **Backend:** Django, Django REST Framework (DRF)
+- **Database:** SQLite (Development), PostgreSQL/RDS (Production)
+- **Distributed Worker Queue:** Celery, Redis
+- **Processing Engine:** FFmpeg, FFprobe
+- **Frontend:** HTML5, CSS3, Tailwind CSS, Javascript, Plyr (Player engine)
+- **Containerization:** Docker, Docker Compose
 
 ---
 
