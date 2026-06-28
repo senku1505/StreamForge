@@ -122,3 +122,13 @@ python manage.py runserver
 ```
 
 Open your browser and navigate to `http://127.0.0.1:8000/` to test.
+
+### 5. Admin Panel & Superuser
+
+To manage users and access the Django admin panel, you will need to create a superuser account. Run the following command in your terminal (with your virtual environment activated):
+
+```bash
+python manage.py createsuperuser
+```
+
+Follow the prompts to set your username, email, and password. Once created, you can access the admin panel by navigating to `http://127.0.0.1:8000/admin/` in your browser and logging in with those credentials.
