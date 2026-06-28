@@ -53,6 +53,7 @@ docker-compose up --build
 ```
 
 This single command handles:
+
 1. Building Python-slim images loaded with FFmpeg dependencies.
 2. Launching Redis queue containers.
 3. Automatically applying database schema migrations.
@@ -65,13 +66,17 @@ Open your browser to `http://localhost:8000/` once the console indicates the ser
 ## Local Development Installation
 
 ### Prerequisites
+
 Ensure the following tools are installed on your local operating system:
+
 - Python 3.9+
 - Redis Server
 - FFmpeg (includes FFprobe)
 
 ### 1. Configure the Environment
+
 Clone the repository and create a virtual environment:
+
 ```bash
 git clone https://github.com/senku1505/StreamForge.git
 cd StreamForge
@@ -80,13 +85,17 @@ source venv/bin/activate
 ```
 
 ### 2. Install Python Dependencies
+
 Install the required packages from requirements.txt:
+
 ```bash
 pip install -r requirements.txt
 ```
 
 ### 3. Initialize the Database
+
 Generate database tables and apply schema migrations:
+
 ```bash
 python manage.py makemigrations
 python manage.py migrate
@@ -95,16 +104,19 @@ python manage.py migrate
 ### 4. Start the Application Stack
 
 Start the Redis server:
+
 ```bash
 redis-server
 ```
 
 Start the Celery worker nodes (open a new terminal window):
+
 ```bash
 celery -A streamforge worker --loglevel=info
 ```
 
 Start the Django development server:
+
 ```bash
 python manage.py runserver
 ```
