@@ -8,11 +8,34 @@ import json
 from datetime import datetime, timezone
 
 class Command(BaseCommand):
-    help = 'Syncs SQLite database with S3 assets and performs periodic 10-day cleanup'
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--wipe',
+            action='store_true',
+            help='Wipe all database records and S3 bucket files immediately',
+        )
 
     def handle(self, *args, **options):
         if not getattr(settings, 'USE_S3', False):
             self.stdout.write("S3 is not enabled (USE_S3 is False). Skipping sync.")
+            return
+
+        # If --wipe is set, do the wipe and exit
+        if options['wipe']:
+            self.stdout.write("==> Wiping database and S3/R2 storage immediately...")
+            try:
+                bucket = default_storage.bucket
+                bucket.objects.all().delete()
+                Video.objects.all().delete()
+                # Re-save cleanup metadata with current time
+                cleanup_meta_key = 'cleanup_metadata.json'
+                if default_storage.exists(cleanup_meta_key):
+                    default_storage.delete(cleanup_meta_key)
+                now = datetime.now(timezone.utc)
+                default_storage.save(cleanup_meta_key, ContentFile(json.dumps({'last_cleanup': now.isoformat()}).encode('utf-8')))
+                self.stdout.write(self.style.SUCCESS("Wipe completed successfully. Storage is empty."))
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f"Failed to wipe storage: {e}"))
             return
 
         self.stdout.write("==> Running S3 database synchronization and cleanup check...")
