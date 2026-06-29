@@ -1,137 +1,281 @@
-# StreamForge (Hugging Face Deployment Branch)
+# StreamForge — Hugging Face Deployment Branch
 
-## Deployed Project: [StreamForge on Hugging Face Spaces](https://senku1505-streamforge.hf.space/)
+## 🚀 Live Deployment: [senku1505-streamforge.hf.space](https://senku1505-streamforge.hf.space/)
 
-For the original project details, see the [Main README on GitHub](https://github.com/senku1505/StreamForge/blob/main/README.md).
-
----
-
-
-## Project Features
-
-- **Adaptive HLS Streaming:** Automatically segments uploads into 6-second fragments and compiles multi-bitrate playlists (1080p and 720p).
-- **Concurrent Upload Dashboard:** Drag-and-drop file uploader supporting simultaneous uploads and real-time processing stage indicators.
-- **JWT Authentication Backend:** Secure custom authentication using JSON Web Tokens.
-- **Public Feed & Personal Page Isolation:** Multi-user feeds showing uploader credits, with delete authorizations restricted to owner accounts.
-- **Sprite Sheet Hover Previews:** Fast seek bar previews and library thumbnails animated with CSS background shifts on sprite sheets.
-- **Detailed Metadata Side Panel:** Side panel rendering code specifications, frame rates (FPS), bitrates, resolution, and formats.
-- **Storage Limit Manager:** Auto-deletes the oldest 2 videos when the media directory exceeds a 5 GB disk quota.
+> **Branch:** `deploy-huggingface` — production-ready Docker build targeting Hugging Face Spaces.
+> For the base project, see the [`main` branch README](https://github.com/senku1505/StreamForge/blob/main/README.md).
 
 ---
 
-## Tech Stack Used
+## What is StreamForge?
 
-- **Backend:** Django, Django REST Framework (DRF)
-- **Database:** SQLite (Development), PostgreSQL/RDS (Production)
-- **Distributed Worker Queue:** Celery, Redis
-- **Processing Engine:** FFmpeg, FFprobe
-- **Frontend:** HTML5, CSS3, Tailwind CSS, Javascript, Plyr (Player engine)
-- **Containerization:** Docker, Docker Compose
+StreamForge is a self-hosted video streaming platform built from scratch. You upload raw video files, and the platform automatically transcodes them into adaptive HLS streams (1080p + 720p), generates sprite sheets for seek previews, extracts metadata, and serves everything through a polished video player — all powered by FFmpeg running inside a Celery worker queue.
 
 ---
 
-## Simple Project Workflow
+## ✨ Features
+
+| Feature                          | Details                                                               |
+| -------------------------------- | --------------------------------------------------------------------- |
+| **Adaptive HLS Streaming** | Single-pass dual-encode to 1080p + 720p HLS with 6s segments          |
+| **Sprite Sheet Previews**  | Hover the seek bar to see frame previews generated from the video     |
+| **Concurrent Uploads**     | Drag-and-drop multi-file uploader with per-file real-time progress    |
+| **JWT Authentication**     | Custom JWT auth, login persisted via`localStorage`                  |
+| **My Studio**              | Per-user video management — rename, delete, and view your own videos |
+| **Public Feed**            | All uploaded videos with R2 CDN-backed thumbnails and HLS playback    |
+| **Rebuild Persistence**    | Videos + users auto-restored from R2 metadata on container restart    |
+| **10-Day Auto-Cleanup**    | R2 storage and DB wiped automatically every 10 days                   |
+| **Keep-Alive Cron**        | GitHub Actions pings the Space every 47.5 hours to prevent sleep      |
+
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Hugging Face Space (Docker)                   │
+│                                                                  │
+│  ┌──────────────┐   ┌──────────────┐   ┌──────────────────────┐ │
+│  │   Gunicorn   │   │    Redis     │   │   Celery Worker      │ │
+│  │  (3 workers) │   │  (in-proc)   │   │  (ForkPoolWorker)    │ │
+│  │  port 7860   │   │  port 6379   │   │                      │ │
+│  └──────┬───────┘   └──────┬───────┘   └──────────┬───────────┘ │
+│         │                  │                       │             │
+│         │    Django REST   │   Task Queue          │             │
+│         └──────────────────┼───────────────────────┘             │
+│                            │                                     │
+│              SQLite DB (ephemeral, rebuilt on restart)           │
+└────────────────────────────┼────────────────────────────────────┘
+                             │
+               ┌─────────────▼──────────────┐
+               │   Cloudflare R2 Bucket      │
+               │   (streamforge-media)        │
+               │                              │
+               │  raw/          ← source mp4  │
+               │  hls/<id>/     ← HLS streams │
+               │  thumbnails/   ← JPG thumbs  │
+               │  sprites/      ← sprite JPGs │
+               │  hls/<id>/metadata.json      │
+               │  cleanup_metadata.json        │
+               └──────────────────────────────┘
+```
+
+### Request → Playback Flow
 
 ```mermaid
 graph TD
-    Client[Client Browser] -->|Upload Video / JWT Auth| Web[Django Web Server]
-    Web -->|Validate Payload & Save DB| DB[(Database)]
-    Web -->|Dispatch Transcode Task| Redis[Redis Message Broker]
-    Redis -->|Consume Task| Worker[Celery Worker Nodes]
-    Worker -->|Execute FFprobe| Metadata[Extract Specs & Resolution]
-    Worker -->|Execute FFmpeg| Transcode[Encode HLS 1080p & 720p]
-    Worker -->|Execute FFmpeg Sprite| Sprites[Build Thumbnail & Sprite Sheet]
-    Worker -->|Quota check| Quota[Wipe old files if media > 5GB]
-    Worker -->|Save Paths & Mark done| DB
+    U["User Browser"] -->|"Upload video + JWT"| DJ["Django View"]
+    DJ -->|"Save raw file"| R2[("Cloudflare R2")]
+    DJ -->|"Create Video row status=pending"| DB[("SQLite")]
+    DJ -->|"process_video.delay"| RD["Redis"]
+
+    RD -->|"Task received"| CW["Celery Worker"]
+    CW -->|"Download raw from R2"| TMP["tmp workspace"]
+    CW -->|"ffprobe"| META["Extract metadata"]
+    CW -->|"ffmpeg filter_complex split"| HLS["1080p + 720p HLS segments"]
+    CW -->|"ffmpeg"| THUMB["Thumbnail + Sprite sheet"]
+    CW -->|"ThreadPoolExecutor 8 threads"| R2
+    CW -->|"status = done"| DB
+
+    U -->|"Poll api/videos/id every 2s"| DJ
+    DJ -->|"status update"| U
+    U -->|"HLS.js + Plyr player"| R2
 ```
 
 ---
 
-## Running with Docker Compose
 
-Running the entire containerized stack (Django, Redis, and Celery workers) is fully automated:
+## 🛠️ Tech Stack
 
-```bash
-docker-compose up --build
-```
-
-This single command handles:
-
-1. Building Python-slim images loaded with FFmpeg dependencies.
-2. Launching Redis queue containers.
-3. Automatically applying database schema migrations.
-4. Starting both the Celery processing daemon and the Django app server.
-
-Open your browser to `http://localhost:8000/` once the console indicates the servers have booted.
+| Layer                      | Technology                                                          |
+| -------------------------- | ------------------------------------------------------------------- |
+| **Backend**          | Django 4.x, Django REST Framework                                   |
+| **Auth**             | Custom JWT (PyJWT, 7-day tokens)                                    |
+| **Task Queue**       | Celery 5.x + Redis (in-process, no external broker)                 |
+| **Video Processing** | FFmpeg + FFprobe (`libx264`, `aac`, HLS muxer)                  |
+| **Object Storage**   | Cloudflare R2 (S3-compatible) via`django-storages` + `boto3`    |
+| **Database**         | SQLite (ephemeral, rebuilt from R2 on each restart)                 |
+| **Frontend**         | Vanilla HTML/CSS/JS, Tailwind CDN, Plyr player, HLS.js              |
+| **Container**        | Docker (`python:3.9-slim`), runs as `user 1000` (HF compatible) |
+| **CI / Keep-Alive**  | GitHub Actions workflow pings HF Space every 47.5h                  |
 
 ---
 
-## Local Development Installation
+## 📂 R2 Bucket Structure
 
-### Prerequisites
-
-Ensure the following tools are installed on your local operating system:
-
-- Python 3.9+
-- Redis Server
-- FFmpeg (includes FFprobe)
-
-### 1. Configure the Environment
-
-Clone the repository and create a virtual environment:
-
-```bash
-git clone https://github.com/senku1505/StreamForge.git
-cd StreamForge
-python3 -m venv venv
-source venv/bin/activate
+```
+streamforge-media/
+├── raw/
+│   └── <original_filename>.mp4          ← uploaded source file
+├── hls/
+│   └── <video_id>/
+│       ├── master.m3u8                  ← multi-bitrate playlist
+│       ├── 1080p/
+│       │   ├── stream.m3u8
+│       │   └── seg000.ts … segN.ts
+│       ├── 720p/
+│       │   ├── stream.m3u8
+│       │   └── seg000.ts … segN.ts
+│       └── metadata.json                ← title, owner, duration, fps,
+│                                           codec, resolution, bitrate,
+│                                           owner_password_hash
+├── thumbnails/
+│   └── <video_id>.jpg
+├── sprites/
+│   └── <video_id>.jpg                   ← sprite sheet for seek preview
+└── cleanup_metadata.json                ← stores last_cleanup timestamp
 ```
 
-### 2. Install Python Dependencies
+---
 
-Install the required packages from requirements.txt:
+## ♻️ Rebuild Persistence
 
-```bash
-pip install -r requirements.txt
+Because Hugging Face Spaces uses an **ephemeral container** (SQLite is wiped on every rebuild), StreamForge recovers state on every boot via `start.sh`:
+
+```
+1. python manage.py migrate          → create fresh DB schema
+2. python manage.py sync_s3          → scan R2 for hls/*/metadata.json
+                                        → restore Video rows
+                                        → restore User accounts
+                                           (password hash saved in metadata.json)
+3. createsuperuser (if env vars set) → admin access
+4. celery worker + gunicorn          → serve
 ```
 
-### 3. Initialize the Database
+Users are restored with their **exact password hash** (stored in `metadata.json` in R2 when a video is first processed). No data is lost across rebuilds — only the ephemeral SQLite is regenerated.
 
-Generate database tables and apply schema migrations:
+---
 
-```bash
-python manage.py makemigrations
-python manage.py migrate
-```
+## 🔐 Environment Variables (Hugging Face Secrets)
 
-### 4. Start the Application Stack
+| Variable                      | Purpose                                                          |
+| ----------------------------- | ---------------------------------------------------------------- |
+| `AWS_ACCESS_KEY_ID`         | R2 access key                                                    |
+| `AWS_SECRET_ACCESS_KEY`     | R2 secret key                                                    |
+| `AWS_S3_ENDPOINT_URL`       | R2 endpoint (e.g.`https://<account>.r2.cloudflarestorage.com`) |
+| `AWS_STORAGE_BUCKET_NAME`   | R2 bucket name                                                   |
+| `DJANGO_SECRET_KEY`         | Django secret key                                                |
+| `DJANGO_SUPERUSER_USERNAME` | Auto-created admin username on first boot                        |
+| `DJANGO_SUPERUSER_PASSWORD` | Admin password (also used as fallback for restored users)        |
+| `DJANGO_SUPERUSER_EMAIL`    | Admin email                                                      |
+| `WIPE_STORAGE`              | Set to`True` to wipe all R2 + DB on next restart               |
 
-Start the Redis server:
+---
 
-```bash
-redis-server
-```
+## 📦 Deployment Notes
 
-Start the Celery worker nodes (open a new terminal window):
+### FFmpeg Single-Pass Dual Encode
 
-```bash
-celery -A streamforge worker --loglevel=info
-```
-
-Start the Django development server:
-
-```bash
-python manage.py runserver
-```
-
-Open your browser and navigate to `http://127.0.0.1:8000/` to test.
-
-### 5. Admin Panel & Superuser
-
-To manage users and access the Django admin panel, you will need to create a superuser account. Run the following command in your terminal (with your virtual environment activated):
+Both 1080p and 720p HLS streams are generated in **a single FFmpeg invocation** using `filter_complex split`, cutting encode time by ~50%:
 
 ```bash
-python manage.py createsuperuser
+ffmpeg -i input.mp4 \
+  -filter_complex '[0:v]split[v1][v2];[v1]scale=...:1080[out1080];[v2]scale=...:720[out720]' \
+  -map [out1080] -map 0:a:0? ... 1080p/stream.m3u8 \
+  -map [out720]  -map 0:a:0? ... 720p/stream.m3u8
 ```
 
-Follow the prompts to set your username, email, and password. Once created, you can access the admin panel by navigating to `http://127.0.0.1:8000/admin/` in your browser and logging in with those credentials.
+> `-map 0:a:0?` maps only the **first audio track** — critical for iPhone/iOS videos which embed extra `Core Media Metadata` data streams with `codec: none` that would crash FFmpeg otherwise.
+
+### Parallel S3 Uploads
+
+After transcoding, all assets (HLS segments, thumbnail, sprite, metadata JSON) are uploaded to R2 **concurrently** using `ThreadPoolExecutor(max_workers=8)`.
+
+---
+
+## 🔄 Auto-Cleanup
+
+- **Every 10 days**: R2 bucket and SQLite are automatically wiped (controlled by `cleanup_metadata.json` in R2)
+- **Manual wipe**: Set `WIPE_STORAGE=True` in HF Space secrets and restart
+
+---
+
+## 🛜 Keep-Alive
+
+A GitHub Actions workflow (`.github/workflows/keep_alive.yml`) pings the HF Space URL every **47.5 hours** to prevent the Space from going to sleep due to inactivity.
+
+---
+
+## 📡 API Endpoints
+
+| Method     | Endpoint                  | Auth        | Description                        |
+| ---------- | ------------------------- | ----------- | ---------------------------------- |
+| `POST`   | `/api/login/`           | None        | Login, returns JWT token           |
+| `POST`   | `/api/videos/`          | JWT         | Upload video, triggers Celery task |
+| `GET`    | `/api/videos/`          | None        | List all public videos             |
+| `GET`    | `/api/videos/<id>/`     | None        | Get single video status + metadata |
+| `DELETE` | `/api/videos/<id>/`     | JWT (owner) | Delete video + R2 assets           |
+| `PATCH`  | `/api/videos/<id>/`     | JWT (owner) | Rename video                       |
+| `GET`    | `/api/videos/personal/` | JWT         | List current user's videos         |
+
+---
+
+## 📄 License
+
+MIT
+
+### equest → Playback Flow
+
+```mermaid
+graph TD
+    U[User Browser] -->|POST /api/videos/ + JWT| DJ[Django View]
+    DJ -->|Save raw file| R2[(Cloudflare R2)]
+    DJ -->|Create Video DB row status=pending| DB[(SQLite)]
+    DJ -->|process_video.delay| RD[Redis]
+
+    RD -->|Task received| CW[Celery Worker]
+    CW -->|Download raw from R2| TMP[/tmp workspace]
+    CW -->|ffprobe| META[Extract metadata]
+    CW -->|ffmpeg filter_complex split| HLS[1080p + 720p HLS]
+    CW -->|ffmpeg| THUMB[Thumbnail + Sprite]
+    CW -->|ThreadPoolExecutor x8| R2
+    CW -->|status=done| DB
+
+    U -->|Poll /api/videos/id/ every 2s| DJ
+    DJ -->|status update| U
+    U -->|HLS.js + Plyr player| R2
+```
+
+### equest → Playback Flow
+
+```mermaid
+graph TD
+    U[User Browser] -->|POST /api/videos/ + JWT| DJ[Django View]
+    DJ -->|Save raw file| R2[(Cloudflare R2)]
+    DJ -->|Create Video DB row status=pending| DB[(SQLite)]
+    DJ -->|process_video.delay| RD[Redis]
+
+    RD -->|Task received| CW[Celery Worker]
+    CW -->|Download raw from R2| TMP[/tmp workspace]
+    CW -->|ffprobe| META[Extract metadata]
+    CW -->|ffmpeg filter_complex split| HLS[1080p + 720p HLS]
+    CW -->|ffmpeg| THUMB[Thumbnail + Sprite]
+    CW -->|ThreadPoolExecutor x8| R2
+    CW -->|status=done| DB
+
+    U -->|Poll /api/videos/id/ every 2s| DJ
+    DJ -->|status update| U
+    U -->|HLS.js + Plyr player| R2
+```
+
+### equest → Playback Flow
+
+```mermaid
+graph TD
+    U[User Browser] -->|POST /api/videos/ + JWT| DJ[Django View]
+    DJ -->|Save raw file| R2[(Cloudflare R2)]
+    DJ -->|Create Video DB row status=pending| DB[(SQLite)]
+    DJ -->|process_video.delay| RD[Redis]
+
+    RD -->|Task received| CW[Celery Worker]
+    CW -->|Download raw from R2| TMP[/tmp workspace]
+    CW -->|ffprobe| META[Extract metadata]
+    CW -->|ffmpeg filter_complex split| HLS[1080p + 720p HLS]
+    CW -->|ffmpeg| THUMB[Thumbnail + Sprite]
+    CW -->|ThreadPoolExecutor x8| R2
+    CW -->|status=done| DB
+
+    U -->|Poll /api/videos/id/ every 2s| DJ
+    DJ -->|status update| U
+    U -->|HLS.js + Plyr player| R2
+```
