@@ -12,7 +12,7 @@ python manage.py migrate
 echo "==> Running S3 database synchronization and cleanup..."
 if [ "$WIPE_STORAGE" = "True" ]; then
     echo "==> Wiping database and S3/R2 storage as requested by WIPE_STORAGE=True..."
-    python -c "from django.core.files.storage import default_storage; from django.conf import settings; from videos.models import Video; Video.objects.all().delete(); getattr(default_storage, 'bucket', None) and default_storage.bucket.objects.all().delete()" || true
+    python manage.py shell -c "from django.core.files.storage import default_storage; from django.conf import settings; from videos.models import Video; Video.objects.all().delete(); getattr(default_storage, 'bucket', None) and default_storage.bucket.objects.all().delete()"
 fi
 python manage.py sync_s3
 
