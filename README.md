@@ -208,74 +208,11 @@ A GitHub Actions workflow (`.github/workflows/keep_alive.yml`) pings the HF Spac
 | `PATCH`  | `/api/videos/<id>/`     | JWT (owner) | Rename video                       |
 | `GET`    | `/api/videos/personal/` | JWT         | List current user's videos         |
 
+
+---
+
 ---
 
 ## 📄 License
 
 MIT
-
-### equest → Playback Flow
-
-```mermaid
-graph TD
-    U[User Browser] -->|POST /api/videos/ + JWT| DJ[Django View]
-    DJ -->|Save raw file| R2[(Cloudflare R2)]
-    DJ -->|Create Video DB row status=pending| DB[(SQLite)]
-    DJ -->|process_video.delay| RD[Redis]
-
-    RD -->|Task received| CW[Celery Worker]
-    CW -->|Download raw from R2| TMP[/tmp workspace]
-    CW -->|ffprobe| META[Extract metadata]
-    CW -->|ffmpeg filter_complex split| HLS[1080p + 720p HLS]
-    CW -->|ffmpeg| THUMB[Thumbnail + Sprite]
-    CW -->|ThreadPoolExecutor x8| R2
-    CW -->|status=done| DB
-
-    U -->|Poll /api/videos/id/ every 2s| DJ
-    DJ -->|status update| U
-    U -->|HLS.js + Plyr player| R2
-```
-
-### equest → Playback Flow
-
-```mermaid
-graph TD
-    U[User Browser] -->|POST /api/videos/ + JWT| DJ[Django View]
-    DJ -->|Save raw file| R2[(Cloudflare R2)]
-    DJ -->|Create Video DB row status=pending| DB[(SQLite)]
-    DJ -->|process_video.delay| RD[Redis]
-
-    RD -->|Task received| CW[Celery Worker]
-    CW -->|Download raw from R2| TMP[/tmp workspace]
-    CW -->|ffprobe| META[Extract metadata]
-    CW -->|ffmpeg filter_complex split| HLS[1080p + 720p HLS]
-    CW -->|ffmpeg| THUMB[Thumbnail + Sprite]
-    CW -->|ThreadPoolExecutor x8| R2
-    CW -->|status=done| DB
-
-    U -->|Poll /api/videos/id/ every 2s| DJ
-    DJ -->|status update| U
-    U -->|HLS.js + Plyr player| R2
-```
-
-### equest → Playback Flow
-
-```mermaid
-graph TD
-    U[User Browser] -->|POST /api/videos/ + JWT| DJ[Django View]
-    DJ -->|Save raw file| R2[(Cloudflare R2)]
-    DJ -->|Create Video DB row status=pending| DB[(SQLite)]
-    DJ -->|process_video.delay| RD[Redis]
-
-    RD -->|Task received| CW[Celery Worker]
-    CW -->|Download raw from R2| TMP[/tmp workspace]
-    CW -->|ffprobe| META[Extract metadata]
-    CW -->|ffmpeg filter_complex split| HLS[1080p + 720p HLS]
-    CW -->|ffmpeg| THUMB[Thumbnail + Sprite]
-    CW -->|ThreadPoolExecutor x8| R2
-    CW -->|status=done| DB
-
-    U -->|Poll /api/videos/id/ every 2s| DJ
-    DJ -->|status update| U
-    U -->|HLS.js + Plyr player| R2
-```
