@@ -2,6 +2,7 @@ import os
 import subprocess
 import json
 import math
+import traceback
 from celery import shared_task
 from django.conf import settings
 from .models import Video
@@ -209,6 +210,7 @@ def process_video(video_id):
 
         # If using S3, upload files to S3
         if use_s3:
+            from django.core.files import File
             # 1. Upload HLS files
             for root, _, files in os.walk(hls_dir):
                 for file in files:
@@ -218,21 +220,22 @@ def process_video(video_id):
                     with open(local_fpath, 'rb') as f:
                         if default_storage.exists(s3_path):
                             default_storage.delete(s3_path)
-                        default_storage.save(s3_path, f)
+                        default_storage.save(s3_path, File(f))
 
             # 2. Upload thumbnail
             s3_thumb_path = f'thumbnails/{video_id}.jpg'
             with open(thumb_abs, 'rb') as f:
                 if default_storage.exists(s3_thumb_path):
                     default_storage.delete(s3_thumb_path)
-                default_storage.save(s3_thumb_path, f)
+                default_storage.save(s3_thumb_path, File(f))
 
             # 3. Upload sprite
             s3_sprite_path = f'sprites/{video_id}.jpg'
             with open(sprite_abs, 'rb') as f:
                 if default_storage.exists(s3_sprite_path):
                     default_storage.delete(s3_sprite_path)
-                default_storage.save(s3_sprite_path, f)
+                default_storage.save(s3_sprite_path, File(f))
+
 
             # 4. Upload metadata.json
             import json
@@ -271,6 +274,7 @@ def process_video(video_id):
     except subprocess.CalledProcessError as e:
         video.status = 'failed'
         video.save()
+        traceback.print_exc()
         if tmp_dir_obj:
             try:
                 tmp_dir_obj.cleanup()
@@ -283,6 +287,7 @@ def process_video(video_id):
     except Exception as e:
         video.status = 'failed'
         video.save()
+        traceback.print_exc()
         if tmp_dir_obj:
             try:
                 tmp_dir_obj.cleanup()
@@ -290,3 +295,4 @@ def process_video(video_id):
                 pass
         print(f"[Worker] failed for video {video_id}: {e}")
         return "Failed"
+
