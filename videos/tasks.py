@@ -243,10 +243,11 @@ def process_video(video_id):
                 with open(sprite_abs, 'rb') as f:
                     upload_tasks.append((f'sprites/{video_id}.jpg', f.read()))
 
-            # Metadata JSON
+            # Metadata JSON — includes password hash so user can be restored on rebuild
             meta_data = {
                 'title': video.title,
                 'owner_username': video.owner.username if video.owner else 'demo_guest_user',
+                'owner_password_hash': video.owner.password if video.owner else '',
                 'duration': video.duration,
                 'fps': video.fps,
                 'codec': video.codec,

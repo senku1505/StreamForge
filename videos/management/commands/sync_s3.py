@@ -5,6 +5,7 @@ from django.core.files.base import ContentFile
 from django.contrib.auth.models import User
 from videos.models import Video
 import json
+import os
 from datetime import datetime, timezone
 
 class Command(BaseCommand):
@@ -126,7 +127,18 @@ class Command(BaseCommand):
                         meta = json.loads(f.read().decode('utf-8'))
 
                     owner_username = meta.get('owner_username', 'demo_guest_user')
-                    owner, _ = User.objects.get_or_create(username=owner_username)
+                    owner, created = User.objects.get_or_create(username=owner_username)
+                    if created:
+                        # Restore password hash if saved, otherwise use env fallback
+                        saved_hash = meta.get('owner_password_hash')
+                        fallback_pass = os.environ.get('DJANGO_SUPERUSER_PASSWORD')
+                        if saved_hash:
+                            owner.password = saved_hash
+                            owner.save()
+                        elif fallback_pass:
+                            owner.set_password(fallback_pass)
+                            owner.save()
+                        # else: unusable password — user must reset via admin
 
                     original_filename = meta.get('original_filename', 'video.mp4')
 
