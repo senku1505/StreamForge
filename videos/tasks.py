@@ -241,7 +241,6 @@ def process_video(video_id):
 
 
             # 4. Upload metadata.json
-            import json
             meta_data = {
                 'title': video.title,
                 'owner_username': video.owner.username if video.owner else 'demo_guest_user',
