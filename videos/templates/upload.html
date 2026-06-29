@@ -232,6 +232,8 @@
           percentEl.innerText = "Complete";
 
           checkAllJobsFinished();
+        } else if (xhr.status === 401) {
+          handleLogout();
         } else {
           job.status = 'failed';
           statusEl.innerText = "Upload failed.";
