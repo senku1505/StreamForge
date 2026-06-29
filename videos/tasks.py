@@ -150,17 +150,21 @@ def process_video(video_id):
         video.save()
 
         # ── 2. Encode BOTH HLS streams in a SINGLE ffmpeg pass ───────────────
-        # This is 40-60% faster than two separate encodes since the input is
-        # only decoded once and both outputs are written simultaneously.
+        # Use filter_complex split so the video is decoded once.
+        # Map only 0:a:0? (first audio only) to skip iPhone metadata/data tracks
+        # that have codec 'none' and can't be decoded.
         video.status = 'transcoding_1080p'
         video.save()
 
         _run([
             'ffmpeg', '-y', '-i', input_path,
+            '-filter_complex',
+            '[0:v]split[v1][v2];'
+            '[v1]scale=trunc(oh*a/2)*2:1080[out1080];'
+            '[v2]scale=trunc(oh*a/2)*2:720[out720]',
 
             # ── output 1: 1080p HLS ──
-            '-map', '0:v:0', '-map', '0:a?',
-            '-vf', 'scale=trunc(oh*a/2)*2:1080',
+            '-map', '[out1080]', '-map', '0:a:0?',
             '-c:v', 'libx264', '-crf', '23', '-preset', 'ultrafast',
             '-c:a', 'aac', '-b:a', '192k',
             '-hls_time', '6', '-hls_playlist_type', 'vod',
@@ -168,8 +172,7 @@ def process_video(video_id):
             os.path.join(dir_1080, 'stream.m3u8'),
 
             # ── output 2: 720p HLS ──
-            '-map', '0:v:0', '-map', '0:a?',
-            '-vf', 'scale=trunc(oh*a/2)*2:720',
+            '-map', '[out720]', '-map', '0:a:0?',
             '-c:v', 'libx264', '-crf', '23', '-preset', 'ultrafast',
             '-c:a', 'aac', '-b:a', '128k',
             '-hls_time', '6', '-hls_playlist_type', 'vod',
@@ -189,7 +192,7 @@ def process_video(video_id):
                 "720p/stream.m3u8\n"
             )
 
-        # ── 4. Thumbnail + sprite in ONE ffmpeg pass using filter_complex ────
+        # ── 4. Thumbnail & sprite (two simple reliable passes) ───────────────
         video.status = 'generating_assets'
         video.save()
 
@@ -200,13 +203,21 @@ def process_video(video_id):
         cols       = min(10, num_frames)
         rows       = math.ceil(num_frames / cols)
 
+        # Thumbnail
+        _run([
+            'ffmpeg', '-y', '-ss', str(thumb_at), '-i', input_path,
+            '-map', '0:v:0',
+            '-vframes', '1', '-vf', 'scale=1280:-2', '-q:v', '3',
+            thumb_abs,
+        ])
+
+        # Sprite sheet
         _run([
             'ffmpeg', '-y', '-i', input_path,
-            '-filter_complex',
-            f'[0:v]fps=1/5,scale=160:90,tile={cols}x{rows}[sprite];'
-            f'[0:v]trim=start={thumb_at}:duration=0.1,scale=1280:-1,select=\'eq(n,0)\'[thumb]',
-            '-map', '[sprite]', '-frames:v', '1', '-q:v', '4', sprite_abs,
-            '-map', '[thumb]',  '-frames:v', '1', '-q:v', '3', thumb_abs,
+            '-map', '0:v:0',
+            '-vf', f'fps=1/5,scale=160:90,tile={cols}x{rows}',
+            '-frames:v', '1', '-q:v', '4',
+            sprite_abs,
         ])
 
         # ── 5. Parallel S3 uploads ───────────────────────────────────────────
