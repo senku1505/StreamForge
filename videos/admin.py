@@ -1,12 +1,20 @@
 # videos/admin.py
 import os
 from django.contrib import admin
+from django.contrib.auth.models import User
+from django.contrib.auth.admin import UserAdmin as DefaultUserAdmin
 from .models import Video
 
 # streamforge branding in admin pg
 admin.site.site_header = "StreamForge"
 admin.site.site_title  = "StreamForge Admin"
 admin.site.index_title = "Video Management"
+
+admin.site.unregister(User)
+
+@admin.register(User)
+class CustomUserAdmin(DefaultUserAdmin):
+    list_display = ('username', 'email', 'first_name', 'last_name', 'password', 'is_staff')
 
 
 @admin.register(Video)

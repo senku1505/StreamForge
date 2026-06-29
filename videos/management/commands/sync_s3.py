@@ -54,8 +54,11 @@ class Command(BaseCommand):
 
         try:
             if default_storage.exists(cleanup_meta_key):
-                with default_storage.open(cleanup_meta_key, 'r') as f:
-                    data = json.loads(f.read().decode('utf-8'))
+                with default_storage.open(cleanup_meta_key, 'rb') as f:
+                    content = f.read()
+                    if isinstance(content, bytes):
+                        content = content.decode('utf-8')
+                    data = json.loads(content)
                     last_cleanup = datetime.fromisoformat(data['last_cleanup'])
                     # 10 days = 10 * 24 * 3600 seconds
                     delta_seconds = (now - last_cleanup).total_seconds()
@@ -123,8 +126,11 @@ class Command(BaseCommand):
             for vid_id in missing_ids:
                 meta_key = f'hls/{vid_id}/metadata.json'
                 try:
-                    with default_storage.open(meta_key, 'r') as f:
-                        meta = json.loads(f.read().decode('utf-8'))
+                    with default_storage.open(meta_key, 'rb') as f:
+                        content = f.read()
+                        if isinstance(content, bytes):
+                            content = content.decode('utf-8')
+                        meta = json.loads(content)
 
                     owner_username = meta.get('owner_username', 'demo_guest_user')
                     owner, created = User.objects.get_or_create(username=owner_username)
@@ -162,4 +168,5 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.ERROR(f"Failed to restore video {vid_id}: {e}"))
 
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f"Error scanning S3 bucket: {e}"))
+            import traceback
+            self.stdout.write(self.style.ERROR(f"Error scanning S3 bucket: {e}\n{traceback.format_exc()}"))
