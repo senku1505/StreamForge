@@ -245,6 +245,12 @@
   <script>
     // dynamic header logic
     const token = localStorage.getItem('sf_token');
+    
+    // Redirect to library if already logged in and visiting home page
+    if (token && (window.location.pathname === '/' || window.location.pathname === '/about/')) {
+      window.location.href = '/library/';
+    }
+
     const header = document.getElementById('globalHeader');
 
     if (token) {

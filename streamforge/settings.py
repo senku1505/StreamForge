@@ -164,5 +164,9 @@ if USE_S3:
     AWS_DEFAULT_ACL = None
     AWS_QUERYSTRING_AUTH = False  # Let URLs be public & cacheable
     AWS_S3_SIGNATURE_VERSION = 's3v4'
+    
+    # Custom domain (e.g. pub-xxxx.r2.dev or custom CDN/domain)
+    AWS_S3_CUSTOM_DOMAIN = os.environ.get('AWS_S3_CUSTOM_DOMAIN')
+    AWS_S3_ADDRESSING_STYLE = os.environ.get('AWS_S3_ADDRESSING_STYLE', 'path')
 
 
