@@ -1,6 +1,6 @@
 # StreamForge — Hugging Face Deployment Branch
 
-## 🚀 Live Deployment: [senku1505-streamforge.hf.space](https://senku1505-streamforge.hf.space/)
+## Live Deployment: [senku1505-streamforge.hf.space](https://senku1505-streamforge.hf.space/)
 
 > **Branch:** `deploy-huggingface` — production-ready Docker build targeting Hugging Face Spaces.
 > For the base project, see the [`main` branch README](https://github.com/senku1505/StreamForge/blob/main/README.md).
@@ -13,7 +13,7 @@ StreamForge is a self-hosted video streaming platform built from scratch. You up
 
 ---
 
-## ✨ Features
+## Features
 
 | Feature                          | Details                                                               |
 | -------------------------------- | --------------------------------------------------------------------- |
@@ -29,7 +29,7 @@ StreamForge is a self-hosted video streaming platform built from scratch. You up
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -85,7 +85,7 @@ graph TD
 ---
 
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer                      | Technology                                                          |
 | -------------------------- | ------------------------------------------------------------------- |
@@ -101,7 +101,7 @@ graph TD
 
 ---
 
-## 📂 R2 Bucket Structure
+## R2 Bucket Structure
 
 ```
 streamforge-media/
@@ -128,7 +128,7 @@ streamforge-media/
 
 ---
 
-## ♻️ Rebuild Persistence
+## Rebuild Persistence
 
 Because Hugging Face Spaces uses an **ephemeral container** (SQLite is wiped on every rebuild), StreamForge recovers state on every boot via `start.sh`:
 
@@ -146,7 +146,7 @@ Users are restored with their **exact password hash** (stored in `metadata.json`
 
 ---
 
-## 🔐 Environment Variables (Hugging Face Secrets)
+## Environment Variables (Hugging Face Secrets)
 
 | Variable                      | Purpose                                                          |
 | ----------------------------- | ---------------------------------------------------------------- |
@@ -162,7 +162,7 @@ Users are restored with their **exact password hash** (stored in `metadata.json`
 
 ---
 
-## 📦 Deployment Notes
+## Deployment Notes
 
 ### FFmpeg Single-Pass Dual Encode
 
@@ -183,20 +183,20 @@ After transcoding, all assets (HLS segments, thumbnail, sprite, metadata JSON) a
 
 ---
 
-## 🔄 Auto-Cleanup
+## Auto-Cleanup
 
 - **Every 10 days**: R2 bucket and SQLite are automatically wiped (controlled by `cleanup_metadata.json` in R2)
 - **Manual wipe**: Set `WIPE_STORAGE=True` in HF Space secrets and restart
 
 ---
 
-## 🛜 Keep-Alive
+## Keep-Alive
 
 A GitHub Actions workflow (`.github/workflows/keep_alive.yml`) pings the HF Space URL every **47.5 hours** to prevent the Space from going to sleep due to inactivity.
 
 ---
 
-## 📡 API Endpoints
+## API Endpoints
 
 | Method     | Endpoint                  | Auth        | Description                        |
 | ---------- | ------------------------- | ----------- | ---------------------------------- |
@@ -213,6 +213,6 @@ A GitHub Actions workflow (`.github/workflows/keep_alive.yml`) pings the HF Spac
 
 ---
 
-## 📄 License
+## License
 
 MIT
