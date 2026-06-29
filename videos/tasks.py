@@ -76,7 +76,8 @@ def process_video(video_id):
         try:
             with default_storage.open(video.original_file.name, 'rb') as source:
                 with open(input_path, 'wb') as dest:
-                    shutil.copyfileobj(source, dest)
+                    for chunk in source.chunks():
+                        dest.write(chunk)
         except Exception as e:
             tmp_dir_obj.cleanup()
             raise RuntimeError(f"Failed to download original file from S3: {e}")
@@ -150,7 +151,7 @@ def process_video(video_id):
         video.save()
         _run([
             'ffmpeg', '-y', '-i', input_path,
-            '-vf', 'scale=-2:1080',
+            '-vf', 'scale=trunc(oh*a/2)*2:1080',
             '-c:v', 'libx264', '-crf', '23', '-preset', 'fast',
             '-c:a', 'aac', '-b:a', '192k',
             '-hls_time', '6',
@@ -164,7 +165,7 @@ def process_video(video_id):
         video.save()
         _run([
             'ffmpeg', '-y', '-i', input_path,
-            '-vf', 'scale=-2:720',
+            '-vf', 'scale=trunc(oh*a/2)*2:720',
             '-c:v', 'libx264', '-crf', '23', '-preset', 'fast',
             '-c:a', 'aac', '-b:a', '128k',
             '-hls_time', '6',
@@ -189,11 +190,11 @@ def process_video(video_id):
         video.status = 'generating_assets'
         video.save()
         
-        thumb_at = max(1.0, duration * 0.1)
+        thumb_at = min(1.0, duration / 2.0) if duration > 0 else 0
         thumb_abs = os.path.join(thumb_dir, f'{video_id}.jpg')
         _run([
             'ffmpeg', '-y', '-ss', str(thumb_at), '-i', input_path,
-            '-vframes', '1', '-vf', 'scale=1280:-2', '-q:v', '3',
+            '-vframes', '1', '-vf', 'scale=1280:-1', '-q:v', '3',
             thumb_abs,
         ])
 
@@ -224,17 +225,19 @@ def process_video(video_id):
 
             # 2. Upload thumbnail
             s3_thumb_path = f'thumbnails/{video_id}.jpg'
-            with open(thumb_abs, 'rb') as f:
-                if default_storage.exists(s3_thumb_path):
-                    default_storage.delete(s3_thumb_path)
-                default_storage.save(s3_thumb_path, File(f))
+            if os.path.exists(thumb_abs):
+                with open(thumb_abs, 'rb') as f:
+                    if default_storage.exists(s3_thumb_path):
+                        default_storage.delete(s3_thumb_path)
+                    default_storage.save(s3_thumb_path, File(f))
 
             # 3. Upload sprite
             s3_sprite_path = f'sprites/{video_id}.jpg'
-            with open(sprite_abs, 'rb') as f:
-                if default_storage.exists(s3_sprite_path):
-                    default_storage.delete(s3_sprite_path)
-                default_storage.save(s3_sprite_path, File(f))
+            if os.path.exists(sprite_abs):
+                with open(sprite_abs, 'rb') as f:
+                    if default_storage.exists(s3_sprite_path):
+                        default_storage.delete(s3_sprite_path)
+                    default_storage.save(s3_sprite_path, File(f))
 
 
             # 4. Upload metadata.json

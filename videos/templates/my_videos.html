@@ -224,9 +224,14 @@
             </button>
 
             <div class="p-4">
-              <a href="${link}" class="${cursorClass}">
-                <h3 class="text-sm font-semibold text-white truncate mb-1 group-hover:text-zinc-100">${vid.title}</h3>
-              </a>
+              <div class="flex items-center justify-between mb-1 gap-2">
+                <a href="${link}" class="${cursorClass} flex-1 overflow-hidden">
+                  <h3 id="title-text-${vid.id}" class="text-sm font-semibold text-white truncate group-hover:text-zinc-100">${vid.title}</h3>
+                </a>
+                <button onclick="startRename(event, ${vid.id}, '${vid.title.replace(/'/g, "\\'")}')" class="opacity-0 group-hover:opacity-100 flex-shrink-0 text-zinc-400 hover:text-white transition-colors" title="Rename video">
+                  <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"/></svg>
+                </button>
+              </div>
               <div class="flex items-center justify-between">
                 <p class="text-xs text-zinc-500">${new Date(vid.created_at).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})}</p>
                 ${isDone ? '<span class="text-[11px] text-zinc-500 font-medium">HLS · 1080p · 720p</span>' : ''}
@@ -248,18 +253,42 @@
       });
 
       if (res.status === 204) {
-        const card = document.getElementById(`video-card-${id}`);
-        card.style.opacity = '0';
-        card.style.transform = 'scale(0.95)';
-        setTimeout(() => {
-          card.remove();
-          if (document.querySelectorAll('.card-link').length === 0) {
-            document.getElementById('grid').classList.replace('grid', 'hidden');
-            document.getElementById('emptyState').classList.remove('hidden');
-          }
-        }, 300);
+        document.getElementById(`video-card-${id}`).remove();
+        if (document.querySelectorAll('.card-link').length === 0) {
+          document.getElementById('emptyState').classList.remove('hidden');
+          document.getElementById('grid').classList.replace('grid', 'hidden');
+        }
       } else {
         alert("Failed to delete video. Only the owner can delete.");
+      }
+    }
+
+    function startRename(event, id, currentTitle) {
+      event.preventDefault();
+      event.stopPropagation();
+      const newTitle = prompt("Enter new title for this video:", currentTitle);
+      if (newTitle && newTitle.trim() !== "" && newTitle.trim() !== currentTitle) {
+        renameVideo(id, newTitle.trim());
+      }
+    }
+
+    async function renameVideo(id, newTitle) {
+      try {
+        const res = await fetch(`/api/videos/${id}/`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ title: newTitle })
+        });
+        if (res.ok) {
+          document.getElementById(`title-text-${id}`).innerText = newTitle;
+        } else {
+          alert('Failed to rename video');
+        }
+      } catch (err) {
+        console.error(err);
       }
     }
 

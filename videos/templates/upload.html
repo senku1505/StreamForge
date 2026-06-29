@@ -224,22 +224,21 @@
 
       xhr.addEventListener('load', () => {
         if (xhr.status === 201) {
-          const responseData = JSON.parse(xhr.responseText);
-          job.status = 'processing';
-          job.videoId = responseData.id;
+          job.status = 'done';
           
-          statusEl.innerText = "Transcoding in worker queue...";
-          statusEl.className = "text-amber-400 animate-pulse";
-          barEl.className = "h-full w-full bg-gradient-to-r from-amber-500 to-yellow-500 animate-pulse rounded-full";
-          percentEl.innerText = "Processing";
+          statusEl.innerHTML = `Upload successful! <a href="/my-videos/" class="underline text-white ml-1">View in Studio</a>`;
+          statusEl.className = "text-emerald-400";
+          barEl.className = "h-full w-full bg-gradient-to-r from-emerald-500 to-green-500 rounded-full";
+          percentEl.innerText = "Complete";
 
-          pollProcessingStatus(job);
+          checkAllJobsFinished();
         } else {
           job.status = 'failed';
           statusEl.innerText = "Upload failed.";
           statusEl.className = "text-red-500";
           barEl.className = "h-full w-full bg-red-600 rounded-full";
           percentEl.innerText = "Error";
+          checkAllJobsFinished();
         }
       });
 
@@ -249,52 +248,13 @@
       xhr.send(formData);
     }
 
-    function pollProcessingStatus(job) {
-      const statusEl = document.getElementById(`${job.id}-status`);
-      const percentEl = document.getElementById(`${job.id}-percent`);
-      const barEl = document.getElementById(`${job.id}-bar`);
-
-      const statusMap = {
-        'analyzing':         'Analyzing metadata (ffprobe)…',
-        'transcoding_1080p': 'Encoding HLS 1080p Stream…',
-        'transcoding_720p':  'Encoding HLS 720p Stream…',
-        'generating_assets': 'Generating tiles & thumbnail…'
-      };
-
-      const interval = setInterval(async () => {
-        const res = await fetch(`/api/videos/${job.videoId}/`);
-        const data = await res.json();
-
-        if (statusMap[data.status]) {
-          statusEl.innerText = statusMap[data.status];
-        }
-
-        if (data.status === 'done') {
-          clearInterval(interval);
-          job.status = 'done';
-          statusEl.innerHTML = `<span class="text-emerald-400">Complete! <a href="/player/?id=${job.videoId}" class="underline hover:text-white ml-1.5 font-bold">Watch &rarr;</a></span>`;
-          statusEl.className = "";
-          barEl.className = "h-full w-full bg-gradient-to-r from-emerald-500 to-green-500 rounded-full";
-          percentEl.innerText = "Success";
-          checkAllJobsFinished();
-        } else if (data.status === 'failed') {
-          clearInterval(interval);
-          job.status = 'failed';
-          statusEl.innerText = "Transcoding pipeline failed.";
-          statusEl.className = "text-red-500";
-          barEl.className = "h-full w-full bg-red-600 rounded-full";
-          percentEl.innerText = "Failed";
-          checkAllJobsFinished();
-        }
-      }, 2000);
-    }
-
     function checkAllJobsFinished() {
-      const pendingJobs = filesQueue.filter(j => ['queued', 'uploading', 'processing'].includes(j.status));
+      const pendingJobs = filesQueue.filter(j => ['queued', 'uploading'].includes(j.status));
       if (pendingJobs.length === 0) {
         uploadBtn.disabled = false;
-        uploadBtn.innerText = "Start Transcoding";
         uploadBtn.classList.remove('opacity-40', 'cursor-not-allowed');
+        uploadBtn.innerText = "Go to My Studio";
+        uploadBtn.onclick = () => window.location.href = '/my-videos/';
       }
     }
   </script>

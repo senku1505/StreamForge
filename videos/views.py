@@ -148,6 +148,22 @@ class VideoDetailView(APIView):
         video.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    def patch(self, request, pk):
+        try:
+            video = Video.objects.get(pk=pk)
+        except Video.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        # only owner can edit their files
+        if video.owner and video.owner != request.user:
+            return Response({"error": "you do not own this video"}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = VideoSerializer(video, data=request.data, partial=True, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class PersonalVideoListView(APIView):
     # api endpoint for custom personal pool
