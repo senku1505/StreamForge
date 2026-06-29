@@ -14,6 +14,9 @@ if [ -n "$DJANGO_SUPERUSER_USERNAME" ] && [ -n "$DJANGO_SUPERUSER_PASSWORD" ]; t
     python manage.py createsuperuser --noinput || echo "Superuser already exists or creation failed."
 fi
 
+echo "==> Collecting static files..."
+python manage.py collectstatic --noinput
+
 echo "==> Starting Celery worker..."
 celery -A streamforge worker --loglevel=info --detach
 

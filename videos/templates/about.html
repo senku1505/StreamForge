@@ -247,7 +247,7 @@
     const token = localStorage.getItem('sf_token');
     
     // Redirect to library if already logged in and visiting home page
-    if (token && (window.location.pathname === '/' || window.location.pathname === '/about/')) {
+    if (token && window.location.pathname === '/') {
       window.location.href = '/library/';
     }
 

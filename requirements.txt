@@ -8,4 +8,6 @@ gunicorn
 boto3
 django-storages
 Pillow
+whitenoise
+
 
