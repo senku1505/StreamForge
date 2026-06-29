@@ -9,6 +9,11 @@ redis-server --daemonize yes
 echo "==> Running database migrations..."
 python manage.py migrate
 
+echo "==> Creating superuser if env variables exist..."
+if [ -n "$DJANGO_SUPERUSER_USERNAME" ] && [ -n "$DJANGO_SUPERUSER_PASSWORD" ]; then
+    python manage.py createsuperuser --noinput || echo "Superuser already exists or creation failed."
+fi
+
 echo "==> Starting Celery worker..."
 celery -A streamforge worker --loglevel=info --detach
 
