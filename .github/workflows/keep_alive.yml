@@ -1,0 +1,15 @@
+name: Keep Hugging Face Space Alive
+
+on:
+  schedule:
+    # Run once every 24 hours (e.g. at 00:00 UTC) to prevent the 48-hour hibernation limit
+    - cron: '0 0 * * *'
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send keep-alive request
+        run: |
+          curl -sI https://senku1505-streamforge.hf.space/ | head -n 1

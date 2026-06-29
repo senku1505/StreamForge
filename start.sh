@@ -9,6 +9,9 @@ redis-server --daemonize yes
 echo "==> Running database migrations..."
 python manage.py migrate
 
+echo "==> Running S3 database synchronization and cleanup..."
+python manage.py sync_s3
+
 echo "==> Creating superuser if env variables exist..."
 if [ -n "$DJANGO_SUPERUSER_USERNAME" ] && [ -n "$DJANGO_SUPERUSER_PASSWORD" ]; then
     python manage.py createsuperuser --noinput || echo "Superuser already exists or creation failed."

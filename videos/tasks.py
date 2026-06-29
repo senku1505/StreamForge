@@ -234,6 +234,24 @@ def process_video(video_id):
                     default_storage.delete(s3_sprite_path)
                 default_storage.save(s3_sprite_path, f)
 
+            # 4. Upload metadata.json
+            import json
+            meta_data = {
+                'title': video.title,
+                'owner_username': video.owner.username if video.owner else 'demo_guest_user',
+                'duration': video.duration,
+                'fps': video.fps,
+                'codec': video.codec,
+                'resolution': video.resolution,
+                'bitrate': video.bitrate,
+                'original_filename': os.path.basename(video.original_file.name),
+            }
+            s3_meta_path = f'hls/{video_id}/metadata.json'
+            if default_storage.exists(s3_meta_path):
+                default_storage.delete(s3_meta_path)
+            default_storage.save(s3_meta_path, ContentFile(json.dumps(meta_data).encode('utf-8')))
+
+
         # update db paths & finish
         video.hls_master.name = f'hls/{video_id}/master.m3u8'
         video.thumbnail.name = f'thumbnails/{video_id}.jpg'
