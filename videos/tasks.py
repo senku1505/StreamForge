@@ -211,7 +211,7 @@ def process_video(video_id):
 
         # If using S3, upload files to S3
         if use_s3:
-            from django.core.files import File
+            from django.core.files.base import ContentFile
             # 1. Upload HLS files
             for root, _, files in os.walk(hls_dir):
                 for file in files:
@@ -221,7 +221,7 @@ def process_video(video_id):
                     with open(local_fpath, 'rb') as f:
                         if default_storage.exists(s3_path):
                             default_storage.delete(s3_path)
-                        default_storage.save(s3_path, File(f))
+                        default_storage.save(s3_path, ContentFile(f.read()))
 
             # 2. Upload thumbnail
             s3_thumb_path = f'thumbnails/{video_id}.jpg'
@@ -229,7 +229,7 @@ def process_video(video_id):
                 with open(thumb_abs, 'rb') as f:
                     if default_storage.exists(s3_thumb_path):
                         default_storage.delete(s3_thumb_path)
-                    default_storage.save(s3_thumb_path, File(f))
+                    default_storage.save(s3_thumb_path, ContentFile(f.read()))
 
             # 3. Upload sprite
             s3_sprite_path = f'sprites/{video_id}.jpg'
@@ -237,7 +237,7 @@ def process_video(video_id):
                 with open(sprite_abs, 'rb') as f:
                     if default_storage.exists(s3_sprite_path):
                         default_storage.delete(s3_sprite_path)
-                    default_storage.save(s3_sprite_path, File(f))
+                    default_storage.save(s3_sprite_path, ContentFile(f.read()))
 
 
             # 4. Upload metadata.json

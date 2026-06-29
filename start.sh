@@ -24,7 +24,8 @@ echo "==> Collecting static files..."
 python manage.py collectstatic --noinput
 
 echo "==> Starting Celery worker..."
-celery -A streamforge worker --loglevel=info --detach
+celery -A streamforge worker --loglevel=info &
+
 
 echo "==> Starting Gunicorn server on port 7860..."
 exec gunicorn streamforge.wsgi:application --bind 0.0.0.0:7860 --workers 3 --timeout 120
