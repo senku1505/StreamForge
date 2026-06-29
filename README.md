@@ -10,6 +10,8 @@ pinned: false
 
 # StreamForge
 
+[![Hugging Face Spaces](https://img.shields.github.com/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/senku1505/streamforge)
+
 StreamForge is a full-stack distributed video processing and sharing platform that automatically ingests uploaded videos, extracts metadata, compiles sprite sheets, and transcodes raw files into multi-bitrate HLS (HTTP Live Streaming) adaptive playlists (1080p and 720p).
 
 ---
