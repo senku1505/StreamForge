@@ -1,3 +1,13 @@
+---
+title: StreamForge
+emoji: 🎥
+colorFrom: red
+colorTo: pink
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # StreamForge
 
 StreamForge is a full-stack distributed video processing and sharing platform that automatically ingests uploaded videos, extracts metadata, compiles sprite sheets, and transcodes raw files into multi-bitrate HLS (HTTP Live Streaming) adaptive playlists (1080p and 720p).
