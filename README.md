@@ -1,20 +1,11 @@
----
-title: StreamForge
-emoji: 🎥
-colorFrom: red
-colorTo: pink
-sdk: docker
-app_port: 7860
-pinned: false
----
+# StreamForge (Hugging Face Deployment Branch)
 
-# StreamForge
+## Deployed Project: [StreamForge on Hugging Face Spaces](https://senku1505-streamforge.hf.space/)
 
-[![Hugging Face Spaces](https://img.shields.github.com/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/senku1505/streamforge)
-
-StreamForge is a full-stack distributed video processing and sharing platform that automatically ingests uploaded videos, extracts metadata, compiles sprite sheets, and transcodes raw files into multi-bitrate HLS (HTTP Live Streaming) adaptive playlists (1080p and 720p).
+For the original project details, see the [Main README on GitHub](https://github.com/senku1505/StreamForge/blob/main/README.md).
 
 ---
+
 
 ## Project Features
 
