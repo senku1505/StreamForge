@@ -89,15 +89,10 @@
   </main>
 
   <script>
-    // redirect unauthenticated users immediately
     const token = localStorage.getItem('sf_token');
-    if (!token) {
-      window.location.href = '/login/';
-    }
+    if (!token) { window.location.href = '/login/'; }
 
-    // load header dynamically based on login state
-    const header = document.getElementById('globalHeader');
-    header.innerHTML = `
+    document.getElementById('globalHeader').innerHTML = `
       <div class="mx-auto flex h-full max-w-6xl items-center justify-between px-5">
         <a href="/about/" class="flex items-center gap-2.5 group">
           <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-rose-500 to-rose-700 shadow shadow-rose-900/50">
@@ -109,12 +104,10 @@
           <span class="text-[15px] font-semibold tracking-tight text-white">StreamForge</span>
         </a>
         <div class="flex items-center gap-2">
-          <a href="/library/" class="rounded-lg px-3 py-1.5 text-sm text-zinc-500 transition hover:bg-white/[0.06] hover:text-zinc-300">Public Feed</a>
+          <a href="/library/"   class="rounded-lg px-3 py-1.5 text-sm text-zinc-500 transition hover:bg-white/[0.06] hover:text-zinc-300">Public Feed</a>
           <a href="/my-videos/" class="rounded-lg px-3 py-1.5 text-sm text-zinc-500 transition hover:bg-white/[0.06] hover:text-zinc-300">My Studio</a>
           <span class="rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-300 bg-white/[0.06]">Upload</span>
-          <button onclick="handleLogout()" class="rounded-lg border border-white/[0.08] bg-white/[0.03] px-3.5 py-1.5 text-sm font-semibold text-zinc-400 transition hover:bg-white/[0.07] hover:text-white">
-            Logout
-          </button>
+          <button onclick="handleLogout()" class="rounded-lg border border-white/[0.08] bg-white/[0.03] px-3.5 py-1.5 text-sm font-semibold text-zinc-400 transition hover:bg-white/[0.07] hover:text-white">Logout</button>
         </div>
       </div>
     `;
@@ -129,185 +122,98 @@
     const fileInput    = document.getElementById('files');
     const pipelineList = document.getElementById('pipelineList');
     const uploadBtn    = document.getElementById('uploadBtn');
+    let   filesQueue   = [];
 
-    let filesQueue = [];
-
-    // fancy drag drop effects
     dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drop-active'); });
     dropZone.addEventListener('dragleave', ()  => dropZone.classList.remove('drop-active'));
-    dropZone.addEventListener('drop',      e => {
-      e.preventDefault();
-      dropZone.classList.remove('drop-active');
-      handleSelectedFiles(e.dataTransfer.files);
-    });
-
-    fileInput.addEventListener('change', e => {
-      handleSelectedFiles(e.target.files);
-    });
+    dropZone.addEventListener('drop',      e => { e.preventDefault(); dropZone.classList.remove('drop-active'); handleSelectedFiles(e.dataTransfer.files); });
+    fileInput.addEventListener('change',   e => handleSelectedFiles(e.target.files));
 
     function handleSelectedFiles(filesList) {
-      if (filesList.length === 0) return;
-
+      if (!filesList.length) return;
       pipelineList.classList.remove('hidden');
-
-      for (let file of filesList) {
-        if (file.size > 524288000) {
-          alert(`File "${file.name}" is over 500MB size limit, skipped.`);
-          continue;
-        }
-
-        const fileId = 'file-' + Math.random().toString(36).substr(2, 9);
-        filesQueue.push({
-          id: fileId,
-          file: file,
-          status: 'queued',
-          progress: 0,
-          videoId: null
-        });
-
-        // append progress row
-        pipelineList.innerHTML += `
-          <div id="${fileId}" class="rounded-xl border border-white/[0.05] bg-white/[0.015] p-3.5 transition-all">
-            <div class="flex items-center justify-between gap-3 mb-2">
-              <span class="text-sm font-medium text-white truncate max-w-[280px]" title="${file.name}">${file.name}</span>
-              <span id="${fileId}-percent" class="text-xs font-semibold text-zinc-500 tabular-nums">0%</span>
-            </div>
-            <div class="h-1.5 w-full rounded-full bg-white/[0.05] overflow-hidden mb-2">
-              <div id="${fileId}-bar" class="h-full w-0 bg-rose-600 rounded-full transition-all duration-300"></div>
-            </div>
-            <div class="flex items-center justify-between text-[11px] font-medium">
-              <span id="${fileId}-status" class="text-zinc-500">Queued in pipeline</span>
-              <span id="${fileId}-bytes" class="text-zinc-600 tabular-nums">${(file.size / (1024*1024)).toFixed(1)} MB</span>
-            </div>
-          </div>
-        `;
+      for (const file of filesList) {
+        if (file.size > 524288000) { alert('"' + file.name + '" exceeds 500 MB — skipped.'); continue; }
+        const jid = 'job-' + Math.random().toString(36).slice(2, 11);
+        filesQueue.push({ id: jid, file, status: 'queued', videoId: null });
+        pipelineList.innerHTML += '<div id="' + jid + '" class="rounded-xl border border-white/[0.05] bg-white/[0.015] p-3.5"><div class="flex items-center justify-between gap-3 mb-2"><span class="text-sm font-medium text-white truncate max-w-[280px]">' + file.name + '</span><span id="' + jid + '-pct" class="text-xs font-semibold text-zinc-500 tabular-nums">0%</span></div><div class="h-1.5 w-full rounded-full bg-white/[0.05] overflow-hidden mb-2"><div id="' + jid + '-bar" class="h-full w-0 bg-rose-600 rounded-full transition-all duration-300"></div></div><div class="flex items-center justify-between text-[11px] font-medium"><span id="' + jid + '-status" class="text-zinc-500">Queued</span><span class="text-zinc-600 tabular-nums">' + (file.size / 1048576).toFixed(1) + ' MB</span></div></div>';
       }
     }
 
-    async function startMultiPipeline() {
-      const activeJobs = filesQueue.filter(j => j.status === 'queued');
-      if (activeJobs.length === 0) return alert("Select files first.");
-
+    function startMultiPipeline() {
+      const queued = filesQueue.filter(j => j.status === 'queued');
+      if (!queued.length) { alert('Select files first.'); return; }
       uploadBtn.disabled = true;
       uploadBtn.classList.add('opacity-40', 'cursor-not-allowed');
-
-      activeJobs.forEach(job => {
-        uploadFile(job);
-      });
+      uploadBtn.innerText = 'Uploading\u2026';
+      queued.forEach(uploadFile);
     }
 
     function uploadFile(job) {
       job.status = 'uploading';
-      const statusEl = document.getElementById(`${job.id}-status`);
-      const percentEl = document.getElementById(`${job.id}-percent`);
-      const barEl = document.getElementById(`${job.id}-bar`);
-
-      statusEl.innerText = "Uploading to server...";
-      statusEl.classList.replace('text-zinc-500', 'text-rose-400');
-
-      const formData = new FormData();
-      const rawTitle = job.file.name.replace(/\.[^/.]+$/, "");
-      formData.append('title', rawTitle);
-      formData.append('original_file', job.file);
-
+      const sEl = document.getElementById(job.id + '-status');
+      const pEl = document.getElementById(job.id + '-pct');
+      const bEl = document.getElementById(job.id + '-bar');
+      sEl.innerText = 'Uploading\u2026';
+      sEl.className = 'text-rose-400';
+      const fd = new FormData();
+      fd.append('title', job.file.name.replace(/\.[^/.]+$/, ''));
+      fd.append('original_file', job.file);
       const xhr = new XMLHttpRequest();
-
-      // track upload percentage
       xhr.upload.addEventListener('progress', e => {
-        if (e.lengthComputable) {
-          const percent = Math.round((e.loaded / e.total) * 100);
-          job.progress = percent;
-          barEl.style.width = percent + '%';
-          percentEl.innerText = percent + '%';
-        }
+        if (e.lengthComputable) { const p = Math.round((e.loaded / e.total) * 100); bEl.style.width = p + '%'; pEl.innerText = p + '%'; }
       });
-
       xhr.addEventListener('load', () => {
         if (xhr.status === 201) {
-          const responseData = JSON.parse(xhr.responseText);
-          job.status = 'processing';
-          job.videoId = responseData.id;
-
-          statusEl.innerText = "Queued for transcoding…";
-          statusEl.className = "text-amber-400 animate-pulse";
-          barEl.className = "h-full w-full bg-gradient-to-r from-amber-500 to-yellow-500 animate-pulse rounded-full";
-          percentEl.innerText = "Processing";
-
-          // Unblock upload button immediately so new videos can be added
-          checkAllJobsFinished();
-
-          // Poll this job's status independently
-          pollProcessingStatus(job);
-
+          const d = JSON.parse(xhr.responseText);
+          job.status = 'processing'; job.videoId = d.id;
+          sEl.innerText = 'Queued for transcoding\u2026';
+          sEl.className = 'text-amber-400 animate-pulse';
+          bEl.className = 'h-full w-full bg-gradient-to-r from-amber-500 to-yellow-500 animate-pulse rounded-full';
+          pEl.innerText = 'Processing';
+          checkUploadsDone();
+          pollStatus(job);
         } else if (xhr.status === 401) {
           handleLogout();
         } else {
           job.status = 'failed';
-          statusEl.innerText = "Upload failed.";
-          statusEl.className = "text-red-500";
-          barEl.className = "h-full w-full bg-red-600 rounded-full";
-          percentEl.innerText = "Error";
-          checkAllJobsFinished();
+          sEl.innerText = 'Upload failed.'; sEl.className = 'text-red-500';
+          bEl.className = 'h-full w-full bg-red-600 rounded-full'; pEl.innerText = 'Error';
+          checkUploadsDone();
         }
       });
-
       xhr.open('POST', '/api/videos/', true);
-      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-      xhr.send(formData);
+      xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+      xhr.send(fd);
     }
 
-    function pollProcessingStatus(job) {
-      const statusEl  = document.getElementById(`${job.id}-status`);
-      const percentEl = document.getElementById(`${job.id}-percent`);
-      const barEl     = document.getElementById(`${job.id}-bar`);
-
-      const statusMap = {
-        'analyzing':         'Analyzing metadata (ffprobe)…',
-        'transcoding_1080p': 'Encoding HLS 1080p + 720p…',
-        'transcoding_720p':  'Encoding HLS 1080p + 720p…',
-        'generating_assets': 'Generating thumbnail & sprite…',
-      };
-
-      const interval = setInterval(async () => {
+    function pollStatus(job) {
+      const sEl = document.getElementById(job.id + '-status');
+      const pEl = document.getElementById(job.id + '-pct');
+      const bEl = document.getElementById(job.id + '-bar');
+      const LABELS = { analyzing: 'Analyzing metadata\u2026', transcoding_1080p: 'Encoding 1080p + 720p\u2026', transcoding_720p: 'Encoding 1080p + 720p\u2026', generating_assets: 'Generating thumbnail & sprite\u2026' };
+      const timer = setInterval(async () => {
         try {
-          const res = await fetch(`/api/videos/${job.videoId}/`);
-          if (res.status === 401) { clearInterval(interval); return; }
+          const res = await fetch('/api/videos/' + job.videoId + '/');
+          if (res.status === 401) { clearInterval(timer); handleLogout(); return; }
           const data = await res.json();
-
-          if (statusMap[data.status]) {
-            statusEl.innerText = statusMap[data.status];
-          }
-
+          if (LABELS[data.status]) sEl.innerText = LABELS[data.status];
           if (data.status === 'done') {
-            clearInterval(interval);
-            job.status = 'done';
-            statusEl.innerHTML = `<span class="text-emerald-400">✓ Done! <a href="/player/?id=${job.videoId}" class="underline hover:text-white ml-1.5 font-bold">Watch →</a></span>`;
-            statusEl.className = '';
-            barEl.className = 'h-full w-full bg-gradient-to-r from-emerald-500 to-green-500 rounded-full';
-            percentEl.innerText = 'Success';
+            clearInterval(timer); job.status = 'done';
+            sEl.innerHTML = '<span class="text-emerald-400">\u2713 Done! <a href="/player/?id=' + job.videoId + '" class="underline hover:text-white ml-1 font-bold">Watch \u2192</a></span>';
+            sEl.className = ''; bEl.className = 'h-full w-full bg-gradient-to-r from-emerald-500 to-green-500 rounded-full'; pEl.innerText = '\u2713';
           } else if (data.status === 'failed') {
-            clearInterval(interval);
-            job.status = 'failed';
-            statusEl.innerText = 'Transcoding failed.';
-            statusEl.className = 'text-red-500';
-            barEl.className = 'h-full w-full bg-red-600 rounded-full';
-            percentEl.innerText = 'Failed';
+            clearInterval(timer); job.status = 'failed';
+            sEl.innerText = 'Transcoding failed.'; sEl.className = 'text-red-500';
+            bEl.className = 'h-full w-full bg-red-600 rounded-full'; pEl.innerText = '\u2717';
           }
-        } catch (e) {
-          console.error('[poll]', e);
-        }
+        } catch (err) { console.error('[poll]', err); }
       }, 2000);
     }
 
-    function checkAllJobsFinished() {
-      // Only block on jobs still physically uploading — processing happens async
-      const pendingJobs = filesQueue.filter(j => ['queued', 'uploading'].includes(j.status));
-      if (pendingJobs.length === 0) {
-        uploadBtn.disabled = false;
-        uploadBtn.classList.remove('opacity-40', 'cursor-not-allowed');
-        uploadBtn.innerText = 'Start Transcoding';
-        uploadBtn.onclick = startMultiPipeline;
-      }
+    function checkUploadsDone() {
+      const busy = filesQueue.some(j => j.status === 'uploading' || j.status === 'queued');
+      if (!busy) { uploadBtn.disabled = false; uploadBtn.classList.remove('opacity-40', 'cursor-not-allowed'); uploadBtn.innerText = 'Start Transcoding'; }
     }
   </script>
 </body>
