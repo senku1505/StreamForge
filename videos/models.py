@@ -45,12 +45,21 @@ class Video(models.Model):
         import shutil
         import os
         from django.conf import settings
+        from django.core.files.storage import default_storage
 
-        # wipe files from disk when db row is deleted
+        # wipe files when db row is deleted
         try:
-            hls_dir = os.path.join(settings.MEDIA_ROOT, 'hls', str(self.id))
-            if os.path.exists(hls_dir):
-                shutil.rmtree(hls_dir, ignore_errors=True)
+            if getattr(settings, 'USE_S3', False):
+                # Delete HLS folder from S3
+                try:
+                    bucket = default_storage.bucket
+                    bucket.objects.filter(Prefix=f'hls/{self.id}/').delete()
+                except Exception as e:
+                    print(f"Failed to delete S3 HLS folder: {e}")
+            else:
+                hls_dir = os.path.join(settings.MEDIA_ROOT, 'hls', str(self.id))
+                if os.path.exists(hls_dir):
+                    shutil.rmtree(hls_dir, ignore_errors=True)
         except Exception:
             pass
 

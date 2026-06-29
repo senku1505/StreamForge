@@ -41,13 +41,20 @@ def check_and_enforce_storage_limit():
                 print(f"[Quota] delete failed for {video.id}: {e}")
 
 
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+import tempfile
+import shutil
+
 @shared_task
 def process_video(video_id):
-    # check space first
-    try:
-        check_and_enforce_storage_limit()
-    except Exception as e:
-        print(f"[Quota] check failed: {e}")
+    # check space first if running locally
+    use_s3 = getattr(settings, 'USE_S3', False)
+    if not use_s3:
+        try:
+            check_and_enforce_storage_limit()
+        except Exception as e:
+            print(f"[Quota] check failed: {e}")
 
     try:
         video = Video.objects.get(id=video_id)
@@ -57,15 +64,37 @@ def process_video(video_id):
     if video.status != 'pending':
         return "Already processed"
 
-    input_path = video.original_file.path
-    media_root = settings.MEDIA_ROOT
-
-    # paths setup
-    hls_dir   = os.path.join(media_root, 'hls', str(video_id))
-    dir_1080  = os.path.join(hls_dir, '1080p')
-    dir_720   = os.path.join(hls_dir, '720p')
-    thumb_dir = os.path.join(media_root, 'thumbnails')
-    spr_dir   = os.path.join(media_root, 'sprites')
+    # We will use a temporary directory if S3 is active
+    if use_s3:
+        tmp_dir_obj = tempfile.TemporaryDirectory()
+        working_dir = tmp_dir_obj.name
+        input_filename = os.path.basename(video.original_file.name)
+        input_path = os.path.join(working_dir, input_filename)
+        
+        # Download original file from S3 to temp directory
+        try:
+            with default_storage.open(video.original_file.name, 'rb') as source:
+                with open(input_path, 'wb') as dest:
+                    shutil.copyfileobj(source, dest)
+        except Exception as e:
+            tmp_dir_obj.cleanup()
+            raise RuntimeError(f"Failed to download original file from S3: {e}")
+            
+        hls_dir = os.path.join(working_dir, 'hls')
+        dir_1080 = os.path.join(hls_dir, '1080p')
+        dir_720 = os.path.join(hls_dir, '720p')
+        thumb_dir = os.path.join(working_dir, 'thumbnails')
+        spr_dir = os.path.join(working_dir, 'sprites')
+    else:
+        tmp_dir_obj = None
+        working_dir = None
+        input_path = video.original_file.path
+        media_root = settings.MEDIA_ROOT
+        hls_dir = os.path.join(media_root, 'hls', str(video_id))
+        dir_1080 = os.path.join(hls_dir, '1080p')
+        dir_720 = os.path.join(hls_dir, '720p')
+        thumb_dir = os.path.join(media_root, 'thumbnails')
+        spr_dir = os.path.join(media_root, 'sprites')
 
     for d in [dir_1080, dir_720, thumb_dir, spr_dir]:
         os.makedirs(d, exist_ok=True)
@@ -81,13 +110,11 @@ def process_video(video_id):
             capture_output=True, text=True, check=True,
         )
         data = json.loads(probe.stdout)
-        fmt  = data.get('format', {})
-        st   = data.get('streams', [])
+        fmt = data.get('format', {})
+        st = data.get('streams', [])
         
-        # find the video stream details
         vstream = next((s for s in st if s.get('codec_type') == 'video'), {})
         
-        # set metadata fields
         duration = float(fmt.get('duration', 0) or 0)
         video.duration = round(duration, 2)
         
@@ -161,8 +188,7 @@ def process_video(video_id):
         video.status = 'generating_assets'
         video.save()
         
-        # grab poster frame at 10%
-        thumb_at  = max(1.0, duration * 0.1)
+        thumb_at = max(1.0, duration * 0.1)
         thumb_abs = os.path.join(thumb_dir, f'{video_id}.jpg')
         _run([
             'ffmpeg', '-y', '-ss', str(thumb_at), '-i', input_path,
@@ -170,10 +196,9 @@ def process_video(video_id):
             thumb_abs,
         ])
 
-        # build sprite sheet for seek bar / library hovers (1 frame per 5s)
         num_frames = max(1, math.ceil(duration / 5))
-        cols       = min(10, num_frames)
-        rows       = math.ceil(num_frames / cols)
+        cols = min(10, num_frames)
+        rows = math.ceil(num_frames / cols)
         sprite_abs = os.path.join(spr_dir, f'{video_id}.jpg')
         _run([
             'ffmpeg', '-y', '-i', input_path,
@@ -182,17 +207,57 @@ def process_video(video_id):
             sprite_abs,
         ])
 
+        # If using S3, upload files to S3
+        if use_s3:
+            # 1. Upload HLS files
+            for root, _, files in os.walk(hls_dir):
+                for file in files:
+                    local_fpath = os.path.join(root, file)
+                    rel_to_hls = os.path.relpath(local_fpath, hls_dir)
+                    s3_path = f'hls/{video_id}/{rel_to_hls}'
+                    with open(local_fpath, 'rb') as f:
+                        if default_storage.exists(s3_path):
+                            default_storage.delete(s3_path)
+                        default_storage.save(s3_path, f)
+
+            # 2. Upload thumbnail
+            s3_thumb_path = f'thumbnails/{video_id}.jpg'
+            with open(thumb_abs, 'rb') as f:
+                if default_storage.exists(s3_thumb_path):
+                    default_storage.delete(s3_thumb_path)
+                default_storage.save(s3_thumb_path, f)
+
+            # 3. Upload sprite
+            s3_sprite_path = f'sprites/{video_id}.jpg'
+            with open(sprite_abs, 'rb') as f:
+                if default_storage.exists(s3_sprite_path):
+                    default_storage.delete(s3_sprite_path)
+                default_storage.save(s3_sprite_path, f)
+
         # update db paths & finish
-        video.hls_master.name   = f'hls/{video_id}/master.m3u8'
-        video.thumbnail.name    = f'thumbnails/{video_id}.jpg'
+        video.hls_master.name = f'hls/{video_id}/master.m3u8'
+        video.thumbnail.name = f'thumbnails/{video_id}.jpg'
         video.sprite_sheet.name = f'sprites/{video_id}.jpg'
         video.status = 'done'
         video.save()
+
+        # Clean up temporary directory if we created one
+        if tmp_dir_obj:
+            try:
+                tmp_dir_obj.cleanup()
+            except Exception:
+                pass
+
         return "Success"
 
     except subprocess.CalledProcessError as e:
         video.status = 'failed'
         video.save()
+        if tmp_dir_obj:
+            try:
+                tmp_dir_obj.cleanup()
+            except Exception:
+                pass
         err_msg = e.stderr.decode(errors='replace') if e.stderr else str(e)
         print(f"[FFmpeg] failed for video {video_id}:\n{err_msg}")
         return "Failed"
@@ -200,5 +265,10 @@ def process_video(video_id):
     except Exception as e:
         video.status = 'failed'
         video.save()
+        if tmp_dir_obj:
+            try:
+                tmp_dir_obj.cleanup()
+            except Exception:
+                pass
         print(f"[Worker] failed for video {video_id}: {e}")
         return "Failed"
